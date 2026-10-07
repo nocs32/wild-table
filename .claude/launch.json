@@ -1,0 +1,29 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev"],
+      "port": 5176
+    },
+    {
+      "name": "demo",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["demo"],
+      "port": 5176
+    },
+    {
+      "name": "web-live",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@wild-table/web", "dev"],
+      "port": 5176
+    },
+    {
+      "name": "play-local",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["exec", "concurrently", "--kill-others", "pnpm play:api", "pnpm play:web"],
+      "port": 4176
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+# Wild Table
+
+A multiplayer card game on a 3D table:
+- share a table by URL, add bots if you're short, and play an Uno-style game: match the top card's colour or number, hit each other with action cards, and empty your hand first to win the round;
+- Hearthstone's feel (cards that lift, tilt, fly and slap) in a 90s basement rec room; the table is thrown away about 10 minutes after everyone leaves.
+
+It's the fourth sibling of Felt Table (`../felt-table-jigsaw`), Scribble Table (`../drawing-game`) and Telephone Table (`../telephone-table`): same stack, same house rules, same design system, plus a 3D layer. It's its own project, copied from Telephone Table: fixes to shared parts get copied between the projects by hand (spec D3). The full spec is in `.scratch/SPEC.md`. Read §0 "Decisions so far" before planning any feature: every decision there is settled.
+
+## How we work
+Setup commit first (M0), then each phase gets its own branch and PR, as in the siblings (spec D17, §12):
+1. **Web UI** (`feat/web-ui`), on local MobX stores against the demo table. **It starts with a feel check** of the 3D hand (hover, drag, throw, click, the slap) against the simplest bot, on a laptop and a real phone, reviewed together before the rest is built. Then we review it all together, then PR and merge.
+2. **Backend, and connecting the UI to it** (`feat/live-tables`). We review and check it together, then PR and merge.
+3. **CI** (`feat/ci`). PR and merge.
+4. **Hosting** (`feat/hosting`): `pnpm play` and the `wild-table` Cloudflare Tunnel on wild.timnox.dev.
+
+**Every feature explains itself on screen** (spec D7, D27): cards you can play glow, a card that can't be played says why, the first time each special card is played a caption says what it did, and the rule book is one click away. Anything else people wouldn't guess (drag vs click, the Last card! bell, the +4 challenge, house-rule tent cards, emotes from your portrait, the props to poke) gets a short line or hint right where it's used. Check it in every UI review.
+
+**Never say "Uno"** (spec D2): it's a trademark. Not in UI text in either language, the rule book or the README. The game has its own card design, and the one-card call is **"Last card!"**.
+
+## Scribble Table's word lists stay secret
+The user plays Scribble Table, so knowing its words would spoil it. Nothing in this game is secret from the user, and Wild Table has no word lists, but one rule guards the sibling's: **never open, decode or print** `../drawing-game/modules/core-api/src/words/word-list.b64`, and never show a word from it anywhere.
+
+## Layout
+- `modules/web`: frontend. Vite + React 19 + TypeScript, Panda CSS, MobX, Ark UI, i18next (English and Ukrainian). The 3D table (React Three Fiber, drei, postprocessing, spec D4, §10.2) comes in M1, after the feel check: don't add those libraries before then.
+- `modules/core-api`: backend. Node + Express 5 + Colyseus 0.18 (live tables), one process on :2570.
+- `modules/protocol`: the shared contract. Intent schemas, server events, error codes.
+- `modules/engine`: pure game logic (for now the seeded random generator and the settings), shared by both apps. The deck, legal plays, card effects, house rules, scoring and the bots go here.
+- `eslint.config.mjs` + `eslint-rules/`: the house lint rules for every module.
+- `.scratch/`: spec and notes, ignored by git.
+
+## Rules: read them before writing code
+- **Before** creating or editing anything in `modules/web/**`, read `.claude/rules/web.md` and follow it.
+- **Before** creating or editing anything in `modules/core-api/**`, read `.claude/rules/core-api.md` and follow it.
+- These rules load automatically only once a matching file is opened. Read them first anyway, especially when creating new files.
+- **Before calling a change done,** run `pnpm lint` and `pnpm typecheck` and fix what they report. Don't disable rules or add `eslint-disable` comments without asking.
+
+**House lint rules** (enforced everywhere):
+- **Size:** at most 40 lines per function (components included) and 300 lines per file. Blank lines and comments don't count.
+- **Nested functions:** inside a function, only arrow functions. No nested `function` declarations or expressions, and no object or class methods.
+- **Names:** camelCase for everything. PascalCase only for React components (which must render JSX) and for types and classes.
+- **Return types:** required on every function that returns a value. Lambdas passed as arguments or JSX props are exempt.
+- **Blank lines:** exactly one before and after every code block (functions, if, loops, switch, try, multi-line statements). `pnpm lint --fix` adds them.
+
+## Commands
+```bash
+pnpm install
+pnpm dev           # web on http://localhost:5176 + core-api on :2570 (Vite forwards /api, and /live for tables)
+pnpm lint          # add --fix to auto-fix spacing
+pnpm typecheck
+pnpm test          # engine + core-api; one module: pnpm --filter @wild-table/core-api test
+pnpm demo          # web only, against the demo table (no server): for UI work
+pnpm build         # production web build (CI runs lint, typecheck, test, build on every PR and push to main)
+pnpm play          # build + serve at https://wild.timnox.dev from this PC through a Cloudflare Tunnel (from M4)
+```
+
+## Gotchas
+- **Ports are 5176, 2570 and 4176** (web, core-api, preview), one above Telephone Table's (5175, 2569, 4175), two above Scribble Table's and three above Felt Table's, so all four games can run at once. All are `strictPort`: a taken port fails loudly instead of moving. The room test uses 2592 (Telephone Table's uses 2591).
+- **Never stop the siblings' processes.** Felt, Scribble or Telephone Table may be running `pnpm play` for a game night. When a port is busy, check which project owns the process before touching it.
+- **TypeScript is pinned to 6.0.** typescript-eslint doesn't support TypeScript 7 yet. Don't upgrade it.
+- **pnpm workspaces:** the packages are listed in `pnpm-workspace.yaml`. Add a dependency with `pnpm --filter @wild-table/<module> add <pkg>`.
+- **pnpm's release-age guard:** pnpm refuses versions published in the last day. Pick the previous version instead of adding exceptions.
+- **No shared Colyseus state, and no peeking** (spec D13, §10.4): the server sends each person only their own hand; others see backs and a count. After joining or reconnecting, the browser asks for everything with `sync`.
+- **Hosting is `pnpm play`, not a cloud host** (free, no payment card), as in the siblings. It runs `vite preview` on `127.0.0.1:4176`, which reuses the dev `/api` + `/live` proxy and only accepts the wild.timnox.dev host, plus core-api and the `wild-table` Cloudflare Tunnel (credentials in `~/.cloudflared/`). The tunnel is created in M4; until then `pnpm play` stops at the tunnel. Stop `pnpm dev` first, since both need port 2570. The user starts `pnpm play` themselves: don't start it for them, give them the command.
+- **The demo table** (spec D18): `services/demo-table` plays the server's part in the browser, with sample players who sit down and say hello (they'll play cards as the bots, spec §6.1). `pnpm dev` plays at live tables on core-api (`services/live-table`, behind the same `TableClientService`); `pnpm demo` plays at the demo table. The top bar's **Demo** buttons add or remove a sample player.
+- **Live tables live in core-api's memory:** `tsx watch` restarts core-api when you save a file there, and every table is gone. Open a new one. To play a live table alone, open its link in three or four tabs: each tab is its own person (its seat is kept in sessionStorage, so a reload gets it back).
+- **A dropped connection** keeps its seat for 20 seconds (`limits.ts`).
+- **Phones play in landscape only** (spec D20). The user's group is 3–4 coworkers, some on phones: check every screen at phone size, held sideways.
+- **The look is a stand-in** until M1 settles the rec room (spec §8.1): the stage is a plain CSS felt, and the lobby, chat and dock keep Telephone Table's paper-and-desk styling (its `notebook`, `desk` and `stationery` tokens). The accent is Radix "grass", matching the placeholder logo.
+- **Sounds** are CC0 recordings from Freesound, credited in `modules/web/src/assets/sounds/credits.md` (no music, spec D26). For now only the chime; generated sounds didn't sound good enough in the siblings, so new ones come from Freesound too.
+- **Dev handle:** in development the root store is `window.wildTable`, for checking state from the console or a test script, e.g. `wildTable.room.game.settings.targetScore` or `wildTable.room.presence.count`.

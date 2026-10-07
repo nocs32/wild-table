@@ -1,0 +1,52 @@
+import { observer } from 'mobx-react-lite';
+import type { ReactElement } from 'react';
+import { LogoMark, SendIcon, SpinnerIcon } from '../../../assets';
+import { useRootStore } from '../../../stores/use-root-store';
+import { RoomTopBarDemo } from './demo';
+import { RoomTopBarLink } from './link';
+import { RoomTopBarPeople } from './people';
+import { RoomTopBarSound } from './sound';
+import {
+  RoomTopBarBrand,
+  RoomTopBarEnd,
+  RoomTopBarLanguage,
+  RoomTopBarReconnecting,
+  RoomTopBarRoot,
+  RoomTopBarShare,
+  RoomTopBarShareLabel,
+  RoomTopBarStart,
+} from './styled-components';
+
+export const RoomTopBar = observer(function RoomTopBar(): ReactElement {
+  const { locale, room } = useRootStore();
+
+  return (
+    <RoomTopBarRoot>
+      <RoomTopBarStart>
+        <RoomTopBarBrand>
+          <LogoMark />
+          Wild Table
+        </RoomTopBarBrand>
+        <RoomTopBarDemo />
+        {room.connection.isReconnecting && (
+          <RoomTopBarReconnecting role="status">
+            <SpinnerIcon />
+            {locale.t('status.reconnecting')}
+          </RoomTopBarReconnecting>
+        )}
+      </RoomTopBarStart>
+      <RoomTopBarLink />
+      <RoomTopBarEnd>
+        <RoomTopBarPeople />
+        <RoomTopBarSound />
+        <RoomTopBarLanguage type="button" aria-label={locale.toggleLabel} title={locale.toggleLabel} onClick={locale.toggle}>
+          {locale.code}
+        </RoomTopBarLanguage>
+        <RoomTopBarShare type="button" onClick={room.share.copy}>
+          <SendIcon />
+          <RoomTopBarShareLabel>{room.share.shareLabel}</RoomTopBarShareLabel>
+        </RoomTopBarShare>
+      </RoomTopBarEnd>
+    </RoomTopBarRoot>
+  );
+});
