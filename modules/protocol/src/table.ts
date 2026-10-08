@@ -1,5 +1,7 @@
 import type { GamePhase, GameSettingKey, GameSettings, HouseRule } from './game.js';
+import type { Card } from './cards.js';
 import type { PlayerColor } from './players.js';
+import type { MatchSnapshot } from './round.js';
 
 // What a table looks like to one person. The web app's stores read only these shapes, so the demo
 // referee and the real server are interchangeable behind them (spec D18). Hands will be sent to
@@ -17,6 +19,15 @@ export interface MemberSnapshot {
 export interface GameSnapshot {
   phase: GamePhase;
   settings: GameSettings;
+  // From the first deal to the podium.
+  match: MatchSnapshot | null;
+}
+
+// Your own cards (D13): sent to you alone. `drawnCardId` is the card you just drew that you may
+// still play.
+export interface HandSnapshot {
+  cards: Card[];
+  drawnCardId: string | null;
 }
 
 // What a system line says. Kept as data, so each viewer reads it in their own language.
@@ -28,7 +39,11 @@ export type FeedEvent =
   | { type: 'houseRule'; rule: HouseRule; on: boolean }
   // Someone sat a bot down, or sent one away. `name` is the bot's.
   | { type: 'botAdded'; name: string }
-  | { type: 'botRemoved'; name: string };
+  | { type: 'botRemoved'; name: string }
+  // The match: dealt, a round won (by the line's author), and the match won.
+  | { type: 'matchStarted' }
+  | { type: 'roundWon'; points: number }
+  | { type: 'matchWon'; score: number };
 
 interface FeedItemBase {
   id: string;
@@ -44,6 +59,8 @@ export type FeedItem = (FeedItemBase & { kind: 'message'; text: string }) | (Fee
 export interface TableSnapshot {
   members: MemberSnapshot[];
   game: GameSnapshot;
+  // Null while you're not dealt in: in the lobby, or watching until the next round.
+  hand: HandSnapshot | null;
   feed: FeedItem[];
 }
 

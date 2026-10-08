@@ -5,9 +5,9 @@ import { useRootStore } from '../../../stores/use-root-store';
 import { PanelContent, SettingSlider, SettingSwitch } from '../../../ui';
 import { RoomTopBarSoundPanelTitle } from './styled-components';
 
-// Letting go of the volume plays the chime at the new level.
+// Letting go of the volume plays the chime at the new level. Lighter graphics live here too.
 export const RoomTopBarSoundPanel = observer(function RoomTopBarSoundPanel(): ReactElement {
-  const { locale, sound } = useRootStore();
+  const { locale, sound, graphics } = useRootStore();
   const { t } = locale;
 
   return (
@@ -26,6 +26,7 @@ export const RoomTopBarSoundPanel = observer(function RoomTopBarSoundPanel(): Re
         onPreview={sound.previewVolume}
         onCommit={sound.commitVolume}
       />
+      <SettingSwitch label={t('graphics.light')} hint={t('graphics.hint')} checked={graphics.isLight} surface="room" onChange={graphics.setLight} />
     </PanelContent>
   );
 });

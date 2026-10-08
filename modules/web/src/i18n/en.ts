@@ -1,4 +1,5 @@
 import { enBook } from './en-book';
+import { enRound } from './en-round';
 
 // English UI strings. Every key here needs a Ukrainian one in uk.ts (index.ts checks).
 // Plural keys use i18next suffixes (_one, _other); pass `count` to pick the form.
@@ -77,7 +78,7 @@ export const en = {
     inviteHint: 'Everyone who opens the link sits down at this table.',
     start: 'Deal the cards',
     startNeedsPlayers: 'Start needs 2 players: add a bot or invite someone.',
-    startSoon: 'Ready! The cards themselves come in the next step.',
+    startSoon: 'Ready! Anyone can deal: it starts the match for everyone.',
     rulesLink: 'New to this? The rules in 2 minutes',
     show: 'Table rules',
     hide: 'Hide the table rules',
@@ -100,6 +101,12 @@ export const en = {
     deckHint: 'Click to shuffle, or drag a card off the top and throw it',
     cardHint: 'Drag it to throw it again, or click to turn it over',
     deckPrompt: 'While you wait: click the deck to shuffle it, or grab a card and throw it.',
+    props: {
+      lamp: 'The lamp: click to give it a swing',
+      lava: 'A lava lamp: click to stir it up',
+      boombox: 'A boombox: click to crank it up',
+      pizza: 'Cold pizza: click to lift the lid',
+    },
   },
   cards: {
     colours: { red: 'Red', yellow: 'Yellow', green: 'Green', blue: 'Blue' },
@@ -112,6 +119,7 @@ export const en = {
     wild4: 'Wild +4',
   },
   book: enBook,
+  round: enRound,
   chat: {
     slowDown: 'Too fast: send it again in a moment.',
     notSent: 'Too fast: your last message didn’t go through.',
@@ -135,6 +143,11 @@ export const en = {
     houseRuleOff: 'switched off {{rule}}',
     botAdded: 'sat a bot down: {{name}}',
     botRemoved: 'sent {{name}} the bot away',
+    matchStarted: 'dealt the cards: the match is on',
+    roundWon_one: 'won the round, scoring {{count}} point',
+    roundWon_other: 'won the round, scoring {{count}} points',
+    matchWon_one: 'won the match with {{count}} point',
+    matchWon_other: 'won the match with {{count}} points',
     setting: {
       targetScore: 'set the points to win to {{value}}',
       turnSeconds: 'set the time per turn to {{value}} s',
@@ -147,13 +160,18 @@ export const en = {
     more: 'More emoji',
   },
   sound: {
-    buttonOn: 'Sound settings: on',
-    buttonOff: 'Sound settings: muted',
-    title: 'Sound',
+    buttonOn: 'Sound and graphics: sound on',
+    buttonOff: 'Sound and graphics: sound muted',
+    title: 'Sound and graphics',
     game: 'Game sounds',
     hint: 'A chime when it’s your turn, and the sounds of the cards and the room',
     volume: 'Volume',
     percent: '{{value}}%',
+  },
+  graphics: {
+    light: 'Lighter graphics',
+    hint: 'No shadows or glow: smoother on older laptops and phones. It switches on by itself if the game stutters.',
+    dropped: 'The game was stuttering, so the graphics are lighter now: no shadows or glow. Change it under the speaker at the top.',
   },
   picker: {
     search: 'Search emoji',

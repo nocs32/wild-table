@@ -19,6 +19,19 @@ export const tableErrorCodes = [
   'TABLE_FULL',
   // Only bots can be sent away from the table.
   'NOT_A_BOT',
+  // Start needs two seats filled.
+  'NOT_ENOUGH_PLAYERS',
+  // Watching this round: dealt in at the next one (D14).
+  'NOT_PLAYING',
+  // The moves' refusals (spec §5), as the rules engine gives them.
+  'NOT_YOUR_TURN',
+  'NOT_IN_HAND',
+  'DOES_NOT_FIT',
+  'WRONG_STEP',
+  'NO_RACE',
+  'NOT_A_SEAT',
+  // The next player waits a beat after a Last card! race opens, so the race gets its chance (§5.6).
+  'TOO_SOON',
 ] as const;
 
 export type TableErrorCode = (typeof tableErrorCodes)[number];

@@ -19,12 +19,12 @@ interface RoomTableTentsItemProps {
 export const RoomTableTentsItem = observer(function RoomTableTentsItem({ view, index, count }: RoomTableTentsItemProps): ReactElement {
   const { ruleBook, table } = useRootStore();
   const texture = useTentTexture(view.name);
-  const spot = useRoomTableTentSpot(index, count);
+  const spot = useRoomTableTentSpot(index, count, table.round.isShown);
   const ref = useRoomTablePoke(table.hovered?.kind === 'tent' && table.hovered.rule === view.rule, true, 11 + index);
   const target = { kind: 'tent', rule: view.rule, name: view.name } as const;
 
   return (
-    <group position={spot.position} rotation-y={spot.yaw}>
+    <group position={spot.position} rotation-y={spot.yaw} scale={spot.scale}>
       <group ref={ref}>
         <mesh
           position={tentShape.front.position}

@@ -6,6 +6,7 @@ import { RoomDock } from './dock';
 import { RoomFlights } from './flights';
 import { RoomLobby } from './lobby';
 import { RoomRotate } from './rotate';
+import { RoomRound } from './round';
 import { RoomRuleBook } from './rule-book';
 import { RoomStatus } from './status';
 import { RoomMain, RoomRoot } from './styled-components';
@@ -35,7 +36,7 @@ export const Room = observer(function Room(): ReactElement {
       <RoomTopBar />
       <RoomMain ref={areaRef}>
         <RoomTable />
-        <RoomLobby />
+        {room.game.isLobby ? <RoomLobby /> : <RoomRound />}
         {isCompact && <RoomDock />}
         {ui.widgets.showsChat && <RoomChat />}
         <RoomFlights />

@@ -1,86 +1,14 @@
-import { Server } from '@colyseus/core';
-import type { Room as SdkRoom } from '@colyseus/sdk';
-import { ColyseusTestServer } from '@colyseus/testing';
-import { WebSocketTransport } from '@colyseus/ws-transport';
-import { tableProtocolVersion, tableRoomName, type TableEvents, type TableJoinOptions } from '@wild-table/protocol';
-import { afterAll, afterEach, beforeAll, expect, test } from 'vitest';
-import { TableRoom } from './index.js';
+import { tableRoomName } from '@wild-table/protocol';
+import { expect, test } from 'vitest';
+import { all, feedOf, joinOptions, latest, listen, sitDown as sitDownAt, until, useTestRoom, type Seat } from './test-room.js';
 
-// Away from the dev servers' ports (2567–2570) and Telephone Table's room test (2591), so tests run
-// while the games do. `boot` would always use 2568 for a Server instance, so the server is started here.
-const port = 2592;
+// The lobby through a real room (port 2592; the match test uses 2593).
+const room = useTestRoom(2592);
 
-let colyseus: ColyseusTestServer;
-
-beforeAll(async () => {
-  const server = new Server({ transport: new WebSocketTransport(), greet: false });
-
-  server.define(tableRoomName, TableRoom);
-  await server.listen(port);
-  colyseus = new ColyseusTestServer(server);
-});
-
-afterEach(async () => {
-  await colyseus.cleanup();
-});
-
-afterAll(async () => {
-  await colyseus.shutdown();
-});
-
-interface Logged {
-  type: string;
-  payload: unknown;
-}
-
-// One browser at the table, recording every message it gets.
-interface Seat {
-  room: SdkRoom;
-  log: Logged[];
-}
-
-const joinOptions = (name: string): TableJoinOptions => ({ protocolVersion: tableProtocolVersion, name });
-
-const listen = (room: SdkRoom): Seat => {
-  const seat: Seat = { room, log: [] };
-
-  room.onMessage('*', (type, payload) => seat.log.push({ type: String(type), payload }));
-  room.send('sync', {});
-
-  return seat;
-};
-
-const all = <K extends keyof TableEvents>(seat: Seat, type: K): Array<TableEvents[K]> =>
-  seat.log.filter((logged) => logged.type === type).map((logged) => logged.payload as TableEvents[K]);
-
-const latest = <K extends keyof TableEvents>(seat: Seat, type: K): TableEvents[K] | undefined => all(seat, type).at(-1);
-
-const until = async (check: () => boolean, timeoutMs = 3000): Promise<void> => {
-  const started = Date.now();
-
-  while (!check()) {
-    if (Date.now() - started > timeoutMs) throw new Error('Timed out waiting for the room');
-
-    await new Promise((resolve) => setTimeout(resolve, 10));
-  }
-};
-
-const sitDown = async (count: number): Promise<Seat[]> => {
-  const first = listen(await colyseus.sdk.create(tableRoomName, joinOptions('Player 0')));
-  const joining = Array.from({ length: count - 1 }, async (_, index) => listen(await colyseus.sdk.joinById(first.room.roomId, joinOptions(`Player ${index + 1}`))));
-  const seats = [first, ...(await Promise.all(joining))];
-
-  await until(() => seats.every((seat) => latest(seat, 'view')?.members.length === count));
-
-  return seats;
-};
-
-// Every chat and system line a browser has been sent, in order.
-const feedOf = (seat: Seat): string[] =>
-  all(seat, 'feed').flatMap((event) => event.items.map((item) => (item.kind === 'message' ? item.text : item.event.type)));
+const sitDown = (count: number): Promise<Seat[]> => sitDownAt(room, count);
 
 test('a web app on another protocol version is turned away', async () => {
-  await expect(colyseus.sdk.create(tableRoomName, { protocolVersion: 0, name: null })).rejects.toThrow('PROTOCOL_MISMATCH');
+  await expect(room.colyseus().sdk.create(tableRoomName, { protocolVersion: 0, name: null })).rejects.toThrow('PROTOCOL_MISMATCH');
 });
 
 test('everyone sees who sat down, and a settings change reaches everyone with a feed line', async () => {
@@ -115,7 +43,7 @@ test('bots sit down from the lobby, and a newcomer at a full table takes the new
   ana.room.send('addBot', {});
   await until(() => latest(ana, 'error')?.code === 'TABLE_FULL');
 
-  const bo = listen(await colyseus.sdk.joinById(ana.room.roomId, joinOptions('Bo')));
+  const bo = listen(await room.colyseus().sdk.joinById(ana.room.roomId, joinOptions('Bo')));
 
   await until(() => latest(bo, 'view')?.members.map((member) => member.name).join() === 'Player 0,Ace,Chip,Dice,Domino,Bo');
 });
@@ -138,7 +66,7 @@ test('a reload keeps the seat: the table holds it and sends everything again', a
   await bo.room.leave(false);
   await until(() => latest(ana, 'view')?.members.some((member) => !member.connected) === true);
 
-  const back = listen(await colyseus.sdk.reconnect(token));
+  const back = listen(await room.colyseus().sdk.reconnect(token));
 
   await until(() => latest(back, 'view') !== undefined && latest(back, 'feed')?.reset === true);
   expect(back.room.sessionId).toBe(bo.room.sessionId);

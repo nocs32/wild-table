@@ -1,4 +1,5 @@
 import { ukBook } from './uk-book';
+import { ukRound } from './uk-round';
 
 // Ukrainian UI strings: the same keys as en.ts. Plural keys need _one, _few, _many and _other.
 // Lines about people use the present tense, so they don't depend on the person's gender.
@@ -84,7 +85,7 @@ export const uk = {
     inviteHint: 'Кожен, хто відкриє посилання, сідає за цей стіл.',
     start: 'Роздати карти',
     startNeedsPlayers: 'Для початку потрібно двоє: додайте бота або когось запросіть.',
-    startSoon: 'Усе готово! Самі карти з’являться на наступному кроці.',
+    startSoon: 'Усе готово! Роздати може будь-хто: партія почнеться для всіх.',
     rulesLink: 'Граєте вперше? Правила за 2 хвилини',
     show: 'Правила столу',
     hide: 'Сховати правила столу',
@@ -107,6 +108,12 @@ export const uk = {
     deckHint: 'Натисніть, щоб перетасувати, або стягніть верхню карту й киньте її',
     cardHint: 'Перетягніть, щоб кинути ще раз, або натисніть, щоб перевернути',
     deckPrompt: 'Поки чекаєте: натисніть на колоду, щоб перетасувати, або візьміть карту й киньте її.',
+    props: {
+      lamp: 'Лампа: натисніть, щоб розгойдати',
+      lava: 'Лава-лампа: натисніть, щоб розворушити',
+      boombox: 'Бумбокс: натисніть, щоб зробити гучніше',
+      pizza: 'Холодна піца: натисніть, щоб підняти кришку',
+    },
   },
   cards: {
     colours: { red: 'Червона', yellow: 'Жовта', green: 'Зелена', blue: 'Синя' },
@@ -119,6 +126,7 @@ export const uk = {
     wild4: 'Дика +4',
   },
   book: ukBook,
+  round: ukRound,
   chat: {
     slowDown: 'Надто швидко: надішліть ще раз за мить.',
     notSent: 'Надто швидко: останнє повідомлення не надіслано.',
@@ -144,6 +152,15 @@ export const uk = {
     houseRuleOff: 'вимикає «{{rule}}»',
     botAdded: 'садить за стіл бота: {{name}}',
     botRemoved: 'прибирає бота {{name}}',
+    matchStarted: 'роздає карти: партія почалася',
+    roundWon_one: 'виграє раунд і отримує {{count}} очко',
+    roundWon_few: 'виграє раунд і отримує {{count}} очки',
+    roundWon_many: 'виграє раунд і отримує {{count}} очок',
+    roundWon_other: 'виграє раунд і отримує {{count}} очка',
+    matchWon_one: 'виграє партію з {{count}} очком',
+    matchWon_few: 'виграє партію з {{count}} очками',
+    matchWon_many: 'виграє партію з {{count}} очками',
+    matchWon_other: 'виграє партію з {{count}} очка',
     setting: {
       targetScore: 'ставить очки для перемоги: {{value}}',
       turnSeconds: 'ставить час на хід: {{value}} с',
@@ -156,13 +173,18 @@ export const uk = {
     more: 'Більше емодзі',
   },
   sound: {
-    buttonOn: 'Налаштування звуку: увімкнено',
-    buttonOff: 'Налаштування звуку: вимкнено',
-    title: 'Звук',
+    buttonOn: 'Звук і графіка: звук увімкнено',
+    buttonOff: 'Звук і графіка: звук вимкнено',
+    title: 'Звук і графіка',
     game: 'Звуки гри',
     hint: 'Дзвіночок, коли ваш хід, і звуки карт та кімнати',
     volume: 'Гучність',
     percent: '{{value}}%',
+  },
+  graphics: {
+    light: 'Легша графіка',
+    hint: 'Без тіней і світіння: плавніше на старих ноутбуках і телефонах. Вмикається сама, якщо гра гальмує.',
+    dropped: 'Гра гальмувала, тож графіка тепер легша: без тіней і світіння. Змінити можна під динаміком угорі.',
   },
   picker: {
     search: 'Пошук емодзі',

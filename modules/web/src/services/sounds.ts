@@ -1,24 +1,46 @@
-import type { SoundsService } from './types';
+import type { SoundCue, SoundPlay, SoundsService } from './types';
 
-// The game's cues (spec §7). For now just a chime; the cards, the bell and the room come with the
-// game, from CC0 recordings like this one.
-const cueNames = ['chime'] as const;
+// The game's cues (spec §7): the turn's chime, the cards (a slap on the pile, a deal, a riffle),
+// the Last card! bell, the fuse, the pinball machine's jackpot, the props you poke, and an emote's
+// speech bubble popping up.
+export const soundCues = ['chime', 'slap', 'deal', 'shuffle', 'bell', 'fuse', 'jackpot', 'creak', 'bubbles', 'button', 'box', 'pop'] as const;
 
-type CueName = (typeof cueNames)[number];
+export type SoundUrls = Record<SoundCue, string>;
 
-export type SoundUrls = Record<CueName, string>;
+// Each cue's own level, so they sit together at one volume.
+const cueLevels: Record<SoundCue, number> = {
+  chime: 0.7,
+  slap: 0.95,
+  deal: 0.5,
+  shuffle: 0.55,
+  bell: 0.75,
+  fuse: 0.3,
+  jackpot: 0.6,
+  creak: 0.55,
+  bubbles: 0.55,
+  button: 0.8,
+  box: 0.7,
+  pop: 0.6,
+};
 
-const cueLevels: Record<CueName, number> = { chime: 0.7 };
+interface Voice {
+  source: AudioBufferSourceNode;
+  gain: GainNode;
+}
 
-// A recording played once from `at`, at `level`.
-const playOnce = (context: BaseAudioContext, buffer: AudioBuffer, destination: AudioNode, at: number, level: number): void => {
+// A recording played from now, at `level` and `rate` (a higher rate plays it higher and shorter).
+const start = (context: BaseAudioContext, buffer: AudioBuffer, destination: AudioNode, level: number, rate: number, loop: boolean): Voice => {
   const source = context.createBufferSource();
   const gain = context.createGain();
 
   source.buffer = buffer;
+  source.loop = loop;
+  source.playbackRate.value = rate;
   gain.gain.value = level;
   source.connect(gain).connect(destination);
-  source.start(at);
+  source.start();
+
+  return { source, gain };
 };
 
 // Everything the table plays, from short CC0 recordings. Browsers allow audio only after a click
@@ -26,7 +48,7 @@ const playOnce = (context: BaseAudioContext, buffer: AudioBuffer, destination: A
 export class Sounds implements SoundsService {
   #context: AudioContext | null = null;
   #master: GainNode | null = null;
-  #cues: Record<CueName, AudioBuffer> | null = null;
+  #cues: Record<SoundCue, AudioBuffer> | null = null;
   #level = 0;
   readonly #urls: SoundUrls;
 
@@ -48,14 +70,24 @@ export class Sounds implements SoundsService {
     void (level > 0 ? context.resume() : context.suspend());
   }
 
-  chime(): void {
-    this.#cue('chime');
-  }
-
-  #cue(name: CueName): void {
+  play(cue: SoundCue, { level = 1, rate = 1 }: SoundPlay = {}): void {
     const context = this.#running();
 
-    if (context && this.#cues && this.#master) playOnce(context, this.#cues[name], this.#master, context.currentTime, cueLevels[name]);
+    if (context && this.#cues && this.#master) start(context, this.#cues[cue], this.#master, cueLevels[cue] * level, rate, false);
+  }
+
+  // Plays a cue over and over until the returned function stops it, with a short fade.
+  loop(cue: SoundCue, { level = 1, rate = 1 }: SoundPlay = {}): () => void {
+    const context = this.#running();
+
+    if (!context || !this.#cues || !this.#master) return () => undefined;
+
+    const voice = start(context, this.#cues[cue], this.#master, cueLevels[cue] * level, rate, true);
+
+    return () => {
+      voice.gain.gain.setTargetAtTime(0, context.currentTime, 0.05);
+      voice.source.stop(context.currentTime + 0.3);
+    };
   }
 
   // The context, when it runs and there's something to hear.
@@ -83,8 +115,8 @@ export class Sounds implements SoundsService {
 
   async #load(context: AudioContext): Promise<void> {
     const decode = async (url: string): Promise<AudioBuffer> => context.decodeAudioData(await (await fetch(url)).arrayBuffer());
-    const cues = await Promise.all(cueNames.map(async (name) => [name, await decode(this.#urls[name])] as const));
+    const cues = await Promise.all(soundCues.map(async (name) => [name, await decode(this.#urls[name])] as const));
 
-    this.#cues = Object.fromEntries(cues) as Record<CueName, AudioBuffer>;
+    this.#cues = Object.fromEntries(cues) as Record<SoundCue, AudioBuffer>;
   }
 }

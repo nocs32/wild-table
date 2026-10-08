@@ -24,6 +24,14 @@ export const keyframes = defineKeyframes({
     from: { transform: 'translateX(-10px) rotate(-12deg)' },
     to: { transform: 'translateX(10px) rotate(12deg)' },
   },
+  // A Skip's stamp slams onto a place card, sits there, and lifts off. Straight, never tilted.
+  stampIn: {
+    '0%': { transform: 'translate(-50%, -50%) scale(2.6)', opacity: '0' },
+    '12%': { transform: 'translate(-50%, -50%) scale(0.92)', opacity: '1' },
+    '20%': { transform: 'translate(-50%, -50%) scale(1)', opacity: '1' },
+    '82%': { transform: 'translate(-50%, -50%) scale(1)', opacity: '1' },
+    '100%': { transform: 'translate(-50%, -50%) scale(1.06)', opacity: '0' },
+  },
   // A count that just changed.
   pop: {
     '0%': { transform: 'scale(1)' },
@@ -71,6 +79,16 @@ export const keyframes = defineKeyframes({
   glowPulse: {
     '0%, 100%': { boxShadow: '0 5px 0 {colors.action.primaryEdge}, 0 0 0 0 rgba(255, 201, 99, 0)' },
     '50%': { boxShadow: '0 5px 0 {colors.action.primaryEdge}, 0 0 28px 6px rgba(255, 201, 99, 0.45)' },
+  },
+  // Something asking to be pressed now: the Last card! sign, a "Last card!" tag.
+  pulse: {
+    '0%, 100%': { transform: 'scale(1)' },
+    '50%': { transform: 'scale(1.07)' },
+  },
+  // Whose turn it is: their place card breathes lamplight.
+  turnGlow: {
+    '0%, 100%': { boxShadow: '0 0 0 3px rgba(255, 201, 99, 0.3), 0 0 14px rgba(255, 201, 99, 0.5)' },
+    '50%': { boxShadow: '0 0 0 3px rgba(255, 201, 99, 0.55), 0 0 26px rgba(255, 201, 99, 0.9)' },
   },
   // The "NEW!" starburst turning slowly.
   spinSlow: {

@@ -66,7 +66,7 @@ export const enBook = {
     skip: { name: 'Skip', does: 'The next player misses their turn.', example: 'Ana plays a Skip: Bo misses a turn, and Cy goes next.' },
     reverse: { name: 'Reverse', does: 'Play changes direction.', example: 'With only two players, a Reverse works like a Skip.' },
     draw2: { name: '+2', does: 'The next player draws 2 and misses their turn.', example: 'Ana plays a +2: Bo draws 2, and Cy goes next.' },
-    wild: { name: 'Wild', does: 'You pick the colour in play.', example: 'Four glowing orbs rise over the pile: pick one within 8 seconds.' },
+    wild: { name: 'Wild', does: 'You pick the colour in play.', example: 'Four glowing orbs rise over the pile: click one before your time runs out.' },
     wild4: { name: 'Wild +4', does: 'You pick the colour, and the next player draws 4 and misses their turn.', example: 'Only fair when you hold no card of the colour in play: section 4 has the catch.' },
   },
   wild4: {
@@ -75,7 +75,7 @@ export const enBook = {
     fairNote: 'No blue card in this hand, so the +4 is fair.',
     bluff: 'Bluff',
     bluffNote: 'This hand holds a blue 9, so the +4 is a bluff.',
-    choice: 'Hit by a +4? You have 8 seconds to choose:',
+    choice: 'Hit by a +4? On your turn, choose:',
     take: 'Take 4',
     takeText: 'Draw 4 and miss your turn. If time runs out, this is what happens.',
     challenge: 'Challenge',

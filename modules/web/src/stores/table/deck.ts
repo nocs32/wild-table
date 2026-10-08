@@ -1,13 +1,14 @@
 import { createDeck, shuffle } from '@wild-table/engine';
 import type { CardFace } from '@wild-table/protocol';
 import { makeAutoObservable, runInAction } from 'mobx';
-import type { Schedule } from '../../services';
+import type { Schedule, SoundsService } from '../../services';
 import { cardSize, TableCardBody, type TableCardSpot } from './body';
 import { riffleOrder, spreadSpot, velocityOf, type TableDeckSample } from './motion';
 
 export interface TableDeckDeps {
   random: () => number;
   schedule: Schedule;
+  sounds: SoundsService;
 }
 
 // idle → pressing (a card is pressed) → holding (dragged a few pixels) → idle (let go: thrown or
@@ -46,6 +47,8 @@ export class TableDeckStore {
   readonly bodies: TableCardBody[];
   #press: TableDeckPress | null = null;
   #landings = 0;
+  // The last landing heard, so each slap sounds once.
+  #heardAt = -1;
   #plans: Array<() => void> = [];
   readonly #deps: TableDeckDeps;
 
@@ -149,6 +152,7 @@ export class TableDeckStore {
 
     this.bodies.forEach((body, id) => {
       body.step(dt, now);
+      this.#hear(body.landedAt, body.impact);
 
       if (body.mode === 'felt' && body.y.target < deckTop && !this.order.includes(id) && this.#isOverDeck(body.x.value, body.z.value)) body.y.target = deckTop;
     });
@@ -157,6 +161,22 @@ export class TableDeckStore {
   dispose(): void {
     this.#plans.forEach((cancel) => cancel());
     this.#plans = [];
+
+    if (this.state !== 'gathering' && this.state !== 'shuffling') return;
+
+    // Cut off mid-shuffle (a round started): every card goes back into the deck, squared up.
+    const all = [...this.order, ...this.bodies.map((_, id) => id).filter((id) => !this.order.includes(id))];
+
+    all.forEach((id, slot) => this.bodies[id]?.rest(this.#slotSpot(slot), 'deck'));
+    this.#settle(all);
+  }
+
+  // A thrown card's slap, as loud and as bright as it was hard (D25).
+  #hear(landedAt: number, impact: number): void {
+    if (landedAt <= this.#heardAt) return;
+
+    this.#heardAt = landedAt;
+    this.#deps.sounds.play('slap', { level: 0.3 + impact * 0.7, rate: 0.9 + impact * 0.2 });
   }
 
   #pickUp(id: number): void {
@@ -204,6 +224,7 @@ export class TableDeckStore {
     const next = riffleOrder(this.order, this.#deps.random);
 
     this.state = 'shuffling';
+    this.#later(330, () => this.#deps.sounds.play('shuffle'));
     this.order.forEach((id, slot) => this.bodies[id]?.rest(spreadSpot(slot, half, deckSpot, cardSize.thickness), 'deck'));
     next.forEach((id, slot) => this.#later(380 + slot * 26, () => this.bodies[id]?.rest(this.#slotSpot(slot), 'deck')));
     this.#later(380 + next.length * 26 + 320, () => this.#settle(next));
@@ -217,7 +238,12 @@ export class TableDeckStore {
 
   // Runs `action` later, as an action of its own (MobX's strict mode).
   #later(delayMs: number, action: () => void): void {
-    this.#plans = [...this.#plans, this.#deps.schedule(() => runInAction(action), delayMs)];
+    const cancel = this.#deps.schedule(() => {
+      this.#plans = this.#plans.filter((plan) => plan !== cancel);
+      runInAction(action);
+    }, delayMs);
+
+    this.#plans = [...this.#plans, cancel];
   }
 
   #dealFaces(): CardFace[] {

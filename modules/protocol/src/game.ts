@@ -1,8 +1,7 @@
 // The game's phases, settings and limits (spec §4, §5.7, §5.8).
 
-// Only the lobby for now: rounds, the round's end and the podium come with the game itself
-// (spec §10.3: lobby → round → round end → next round | podium → lobby).
-export const gamePhases = ['lobby'] as const;
+// lobby → round → roundOver → round … → podium → lobby (spec §10.3).
+export const gamePhases = ['lobby', 'round', 'roundOver', 'podium'] as const;
 
 export type GamePhase = (typeof gamePhases)[number];
 
@@ -28,6 +27,10 @@ export type GameSettingKey = 'targetScore' | 'turnSeconds' | 'handSize';
 
 // A change from someone at the table: any of the numbers, and any of the switches.
 export type GameSettingsPatch = Partial<Pick<GameSettings, GameSettingKey>> & { houseRules?: Partial<HouseRules> };
+
+// After a Last card! race opens, the next player's turn waits this long, so the race gets its
+// chance (spec §5.6). The web app holds that player's cards back for as long.
+export const raceBeatMs = 1500;
 
 export const gameLimits = {
   targetScore: { min: 100, max: 500, step: 50 },

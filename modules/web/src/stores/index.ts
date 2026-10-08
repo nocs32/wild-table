@@ -1,6 +1,7 @@
 import { createServices } from '../services';
 import type { Services } from '../services/types';
 import { ArtStore } from './art';
+import { GraphicsStore } from './graphics';
 import { LocaleStore } from './locale';
 import { RoomStore } from './room';
 import { RuleBookStore } from './rule-book';
@@ -15,16 +16,18 @@ export class RootStore {
   readonly room: RoomStore;
   readonly ruleBook: RuleBookStore;
   readonly sound: SoundStore;
+  readonly graphics: GraphicsStore;
   readonly table: TableStore;
 
   constructor(services: Services) {
     this.locale = new LocaleStore(services);
     this.ui = new UiStore(services);
     this.art = new ArtStore(services.cardArt);
-    this.room = new RoomStore(services, this.locale, this.ui);
+    this.room = new RoomStore(services, this.locale, this.ui, this.art);
     this.ruleBook = new RuleBookStore({ t: this.locale.t, art: this.art, settings: this.room.game.settings, device: services.device });
     this.sound = new SoundStore({ t: this.locale.t, sounds: services.sounds, preferences: services.preferences });
-    this.table = new TableStore({ t: this.locale.t, random: services.random, schedule: services.schedule });
+    this.graphics = new GraphicsStore({ t: this.locale.t, preferences: services.preferences, now: services.now, notify: (text) => this.room.game.captions.note(text) });
+    this.table = new TableStore({ t: this.locale.t, random: services.random, schedule: services.schedule, now: services.now, sounds: services.sounds, game: this.room.game });
   }
 }
 

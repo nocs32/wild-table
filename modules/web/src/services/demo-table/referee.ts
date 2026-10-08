@@ -1,12 +1,15 @@
-import { applySettings, settingChanges } from '@wild-table/engine';
+import { applySettings, settingChanges, type Move } from '@wild-table/engine';
 import {
   chatMaxLength,
   cleanPersonName,
   defaultGameSettings,
   gameLimits,
+  type EmoteLine,
+  type FeedEvent,
   type GamePhase,
   type GameSettings,
   type GameSettingsPatch,
+  type TableErrorCode,
   type TableIntents,
   type TableIntentType,
 } from '@wild-table/protocol';
@@ -14,30 +17,49 @@ import type { TableLinkListeners } from '../types';
 import { DemoBots } from './bots';
 import { DemoFeed } from './feed';
 import { demoHandlers, type DemoHandlers } from './intents';
+import { DemoMatch } from './match';
+import { DemoPlayers } from './players';
 import { newBot, nextSample } from './rules';
 import type { DemoDeps, DemoMember, DemoTableState } from './types';
 import { snapshotFor } from './view';
 
 // Plays the server's part in the browser, with sample players (spec D18): who's at the table, the
-// bots, the settings and the chat. The game itself comes later. The real server (core-api) takes
-// over behind the same snapshots and intents, with the same rules: bots sit only in free seats, and
-// someone arriving at a full table takes the newest bot's seat.
+// bots, the settings, the chat, and the match itself, with the engine's rules and bots. The real
+// server (core-api) takes over behind the same snapshots, events and intents, with the same rules:
+// bots sit only in free seats, someone arriving at a full table takes the newest bot's seat, and
+// here every seat but yours is played by the planning bot.
 export class DemoReferee implements DemoTableState {
   members: DemoMember[] = [];
-  phase: GamePhase = 'lobby';
   settings: GameSettings = { ...defaultGameSettings };
   readonly #deps: DemoDeps;
   readonly #out: TableLinkListeners;
+  readonly #meId: string;
   readonly #feed: DemoFeed;
   readonly #bots: DemoBots;
+  readonly #match: DemoMatch;
+  readonly #players: DemoPlayers;
   readonly #handlers: DemoHandlers;
 
-  constructor(deps: DemoDeps, out: TableLinkListeners) {
+  constructor(deps: DemoDeps, out: TableLinkListeners, meId: string) {
     this.#deps = deps;
     this.#out = out;
+    this.#meId = meId;
     this.#feed = new DemoFeed(deps);
     this.#bots = new DemoBots(deps, { chat: (id, text) => this.chat(id, text) });
+
+    this.#match = new DemoMatch(deps, {
+      members: () => this.members,
+      settings: () => this.settings,
+      system: (id, event) => this.#system(id, event),
+      changed: () => this.#changed(),
+    });
+
+    this.#players = new DemoPlayers(deps, { match: this.#match, isBot: (seat) => this.#isBot(seat), moved: () => this.#changed() });
     this.#handlers = demoHandlers(this);
+  }
+
+  get phase(): GamePhase {
+    return this.#match.phase;
   }
 
   get #isFull(): boolean {
@@ -64,8 +86,9 @@ export class DemoReferee implements DemoTableState {
     if (!member) return;
 
     this.members = this.members.filter((other) => other !== member);
+    this.#match.leave(memberId);
     this.#feed.system(member, { type: 'left' });
-    this.#emit();
+    this.#changed();
   }
 
   updateSettings(memberId: string, patch: GameSettingsPatch): void {
@@ -124,6 +147,31 @@ export class DemoReferee implements DemoTableState {
     this.#emit();
   }
 
+  start(memberId: string): void {
+    this.#refuse('start', this.#match.start(memberId));
+    this.#changed();
+  }
+
+  move(memberId: string, type: TableIntentType, move: Move, strength = 0.5): void {
+    this.#refuse(type, this.#match.move(memberId, move, strength, true));
+    this.#changed();
+  }
+
+  // Your emote, back to you: the sample players don't answer yet.
+  emote(memberId: string, line: EmoteLine): void {
+    if (this.#match.record.isSeated(memberId)) this.#out.emote({ seat: memberId, line });
+  }
+
+  nextRound(): void {
+    this.#match.nextRound();
+    this.#changed();
+  }
+
+  playAgain(): void {
+    this.#match.playAgain();
+    this.#changed();
+  }
+
   // Demo buttons: a sample player sits down or gets up.
   addSample(): void {
     const sample = nextSample(this.members, this.#deps.createId);
@@ -139,20 +187,50 @@ export class DemoReferee implements DemoTableState {
 
   dispose(): void {
     this.#bots.cancel();
+    this.#players.cancel();
+    this.#match.dispose();
   }
 
-  // Someone is sitting down at a full table: the newest bot gets up for them.
+  // Someone is sitting down at a full table in the lobby: the newest bot gets up for them.
   #makeRoom(): void {
     const bot = this.members.findLast((member) => member.bot);
 
-    if (this.#isFull && bot) this.leave(bot.id);
+    if (this.#isFull && bot && this.phase === 'lobby') this.leave(bot.id);
   }
 
   #member(id: string): DemoMember | undefined {
     return this.members.find((member) => member.id === id);
   }
 
+  // Every seat but yours, and yours while a bot stands in for you.
+  #isBot(seat: string): boolean {
+    return seat !== this.#meId || this.#match.record.standIns.has(seat);
+  }
+
+  #system(memberId: string, event: FeedEvent): void {
+    const author = this.#member(memberId);
+
+    if (author) this.#feed.system(author, event);
+  }
+
+  #refuse(type: TableIntentType, code: TableErrorCode | null): void {
+    if (code !== null) this.#out.refused({ type, code });
+  }
+
+  // After every change: the bots plan their moves, and you hear about it.
+  #changed(): void {
+    this.#players.drive();
+    this.#emit();
+  }
+
+  // What happened first, then your peeks, then the table as it is now with your hand, in the order
+  // the server's outbox sends them.
   #emit(): void {
-    this.#out.snapshot(snapshotFor(this, this.#feed));
+    const { played, peeks } = this.#match.drain();
+
+    if (played.length > 0) this.#out.play(played);
+
+    peeks.filter((peek) => peek.to === this.#meId).forEach((peek) => this.#out.peek(peek.event));
+    this.#out.snapshot(snapshotFor(this, this.#feed, this.#match.snapshot(), this.#match.hand(this.#meId)));
   }
 }

@@ -1,9 +1,11 @@
 import * as v from 'valibot';
+import { cardColours } from './cards.js';
 import { personNameMaxLength } from './players.js';
+import { emoteLines } from './round.js';
 
 // Bumped whenever an intent or an event changes shape. A web app on another version is turned
 // away with PROTOCOL_MISMATCH and asked to reload.
-export const tableProtocolVersion = 2;
+export const tableProtocolVersion = 4;
 
 // The Colyseus room type the web app creates and joins.
 export const tableRoomName = 'table';
@@ -46,6 +48,9 @@ const settingsPatch = v.partial(
 // Member ids are session ids (people) or bot ids, both short.
 const memberId = v.pipe(v.string(), v.maxLength(64));
 
+// A card's id, like "red-7.1" or "wild4.3".
+const cardId = v.pipe(v.string(), v.maxLength(32));
+
 const empty = v.strictObject({});
 
 // Sent with create and join. `name` is the name this browser picked before (null: the table makes one up).
@@ -68,6 +73,24 @@ export const tableIntentSchemas = {
   // Anyone in the lobby may sit a bot in a free seat, or send one away (spec §4.2).
   addBot: empty,
   removeBot: v.strictObject({ memberId }),
+  // Deals the first round; anyone may, once two seats are filled.
+  start: empty,
+  // The moves (spec §5): the server checks each against the rules. `strength` is how hard the card
+  // was thrown, 0 to 1, for the slap everyone sees (D25).
+  play: v.strictObject({ cardId, strength: v.pipe(v.number(), v.minValue(0), v.maxValue(1)) }),
+  draw: empty,
+  keep: empty,
+  pickColour: v.strictObject({ colour: v.picklist(cardColours) }),
+  challenge: empty,
+  take: empty,
+  swap: v.strictObject({ target: memberId }),
+  bell: empty,
+  // The pointer over a card in your hand (its place, or none), so others see you thinking (§8).
+  hover: v.strictObject({ index: v.nullable(integer(0, 200)) }),
+  emote: v.strictObject({ line: v.picklist(emoteLines) }),
+  // Skips the wait after a round; after the podium, back to the lobby.
+  nextRound: empty,
+  playAgain: empty,
 };
 
 export type TableIntentType = keyof typeof tableIntentSchemas;

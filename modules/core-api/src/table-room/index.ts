@@ -11,11 +11,14 @@ import {
   type TableIntentType,
   type TableJoinOptions,
 } from '@wild-table/protocol';
+import type { Move } from '@wild-table/engine';
 import { customAlphabet } from 'nanoid';
 import * as v from 'valibot';
 import { limits } from '../limits.js';
 import { logger } from '../logger.js';
 import { TableRoomBots } from './bots.js';
+import { TableRoomCards } from './cards.js';
+import { TableRoomClock } from './clock.js';
 import { TableRoomError } from './error.js';
 import { TableRoomFeed } from './feed.js';
 import { TableRoomGame } from './game.js';
@@ -32,10 +35,10 @@ type TableRoomHandler<K extends TableIntentType> = (client: TableClient, message
 const { table } = limits;
 
 // Intents that change nothing in the shared view: no view or feed to send afterwards.
-const quietIntents: ReadonlySet<TableIntentType> = new Set(['sync', 'react']);
+const quietIntents: ReadonlySet<TableIntentType> = new Set(['sync', 'react', 'hover', 'emote']);
 
-// Refusals that happen in normal play: a fast hand, or a move that crossed a phase change.
-const expectedRefusals: ReadonlySet<TableErrorCode> = new Set(['RATE_LIMITED', 'WRONG_PHASE']);
+// Refusals that happen in normal play: a fast hand, a move that crossed another, a race lost.
+const expectedRefusals: ReadonlySet<TableErrorCode> = new Set(['RATE_LIMITED', 'WRONG_PHASE', 'NOT_YOUR_TURN', 'DOES_NOT_FIT', 'WRONG_STEP', 'NO_RACE', 'TOO_SOON', 'NOT_PLAYING']);
 
 // 12 characters of [0-9a-z]: about 62 bits, so table links can't be guessed.
 const createRoomId = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyz', 12);
@@ -54,9 +57,9 @@ const readJoinOptions = (options: unknown): TableJoinOptions => {
   return result.output;
 };
 
-// One shared table. Its parts own the rules: who is here, the game, the bots, the feed, what each
-// person is sent, rate limits, and when the empty table is thrown away. This class only wires them
-// to Colyseus.
+// One shared table. Its parts own the rules: who is here, the game and its clock, the cards, the
+// bots, the feed, what each person is sent, rate limits, and when the empty table is thrown away.
+// This class only wires them to Colyseus.
 export class TableRoom extends Room<{ client: TableClient }> {
   override maxClients = table.maxClients;
   // The lifecycle decides when an empty table goes, not Colyseus.
@@ -71,12 +74,28 @@ export class TableRoom extends Room<{ client: TableClient }> {
   readonly #members = new TableRoomMembers(Math.random);
   readonly #feed = new TableRoomFeed({ now: Date.now, createId: randomUUID, maxItems: feedMaxItems });
   readonly #rateLimits = new TableRoomRateLimits(table.rates, Date.now);
-  readonly #game = new TableRoomGame({ members: this.#members, feed: this.#feed });
-  readonly #bots = new TableRoomBots({ members: this.#members, feed: this.#feed, game: this.#game, createId: randomUUID });
+  readonly #cards = new TableRoomCards({ random: Math.random });
+  readonly #clock = new TableRoomClock({ schedule: this.#schedule, now: Date.now });
+  readonly #game = new TableRoomGame({ members: this.#members, feed: this.#feed, cards: this.#cards, clock: this.#clock, now: Date.now, changed: () => this.#changed() });
+
+  readonly #bots = new TableRoomBots({
+    members: this.#members,
+    feed: this.#feed,
+    game: this.#game,
+    cards: this.#cards,
+    schedule: this.#schedule,
+    now: Date.now,
+    random: Math.random,
+    createId: randomUUID,
+    changed: () => this.#changed(),
+  });
 
   readonly #outbox = new TableRoomOutbox({
     feed: this.#feed,
-    view: () => tableView(this.#members.all, this.#game),
+    view: () => tableView({ members: this.#members.all, game: this.#game, cards: this.#cards, clock: this.#clock, now: Date.now }),
+    hand: (memberId) => this.#cards.hand(memberId),
+    drainPlayed: () => this.#game.drainPlayed(),
+    drainPeeks: () => this.#game.drainPeeks(),
     now: Date.now,
     send: (memberId, type, message) => this.clients.getById(memberId)?.send(type, message),
     broadcast: (type, message) => this.broadcast(type, message),
@@ -100,7 +119,7 @@ export class TableRoom extends Room<{ client: TableClient }> {
 
     this.#lifecycle.join();
     this.#feed.system(member, { type: 'joined' });
-    this.#outbox.flush();
+    this.#changed();
     logger.info('table joined', { roomId: this.roomId, sessionId: client.sessionId, people: this.#members.people, seats: this.#members.count });
   }
 
@@ -109,13 +128,13 @@ export class TableRoom extends Room<{ client: TableClient }> {
   override onDrop(client: TableClient): void {
     this.#members.drop(client.sessionId);
     this.#outbox.forget(client.sessionId);
-    this.#outbox.flush();
+    this.#changed();
     this.allowReconnection(client, table.reconnectSeconds);
   }
 
   override onReconnect(client: TableClient): void {
     this.#members.reconnect(client.sessionId);
-    this.#outbox.flush();
+    this.#changed();
   }
 
   override onLeave(client: TableClient): void {
@@ -126,12 +145,16 @@ export class TableRoom extends Room<{ client: TableClient }> {
     this.#rateLimits.forget(client.sessionId);
     this.#outbox.forget(client.sessionId);
     this.#feed.system(member, { type: 'left' });
+    this.#game.leave(member.id);
     this.#lifecycle.leave(this.#members.people);
-    this.#outbox.flush();
+    this.#changed();
     logger.info('table left', { roomId: this.roomId, sessionId: client.sessionId, people: this.#members.people, seats: this.#members.count });
   }
 
   override onDispose(): void {
+    this.#bots.dispose();
+    this.#game.dispose();
+    this.#clock.dispose();
     this.#lifecycle.dispose();
     this.#rateLimits.dispose();
     this.#outbox.dispose();
@@ -146,6 +169,39 @@ export class TableRoom extends Room<{ client: TableClient }> {
     this.#on('rename', (client, { name }) => this.#rename(client, name));
     this.#on('addBot', (client) => this.#bots.add(client.sessionId));
     this.#on('removeBot', (client, { memberId }) => this.#bots.remove(client.sessionId, memberId));
+    this.#on('start', (client) => this.#game.start(client.sessionId));
+    this.#on('nextRound', (client) => this.#game.nextRound(client.sessionId));
+    this.#on('playAgain', (client) => this.#game.playAgain(client.sessionId));
+    this.#listenToMoves();
+    this.#on('hover', (client, { index }) => this.#hover(client, index));
+    this.#on('emote', (client, { line }) => this.broadcast('emote', { seat: this.#members.get(client.sessionId).id, line }));
+  }
+
+  // The moves (spec §5): the game checks each against the rules.
+  #listenToMoves(): void {
+    const move = (client: TableClient, what: Move, strength = 0.5): void => this.#game.move(client.sessionId, what, strength);
+
+    this.#on('play', (client, { cardId, strength }) => move(client, { type: 'play', cardId }, strength));
+    this.#on('draw', (client) => move(client, { type: 'draw' }));
+    this.#on('keep', (client) => move(client, { type: 'keep' }));
+    this.#on('pickColour', (client, { colour }) => move(client, { type: 'pickColour', colour }));
+    this.#on('challenge', (client) => move(client, { type: 'challenge' }));
+    this.#on('take', (client) => move(client, { type: 'take' }));
+    this.#on('swap', (client, { target }) => move(client, { type: 'swap', target }));
+    this.#on('bell', (client) => move(client, { type: 'bell' }));
+  }
+
+  // Others see your pointer over a card in your hand: its place, never the card (spec §8).
+  #hover(client: TableClient, index: number | null): void {
+    if (this.#game.phase !== 'round' || !this.#game.match.isSeated(client.sessionId)) throw new TableRoomError('NOT_PLAYING');
+
+    this.broadcast('hover', { seat: client.sessionId, index }, { except: client });
+  }
+
+  // After every change: bots pick up their turns, and everyone is sent what changed.
+  #changed(): void {
+    this.#bots.drive();
+    this.#outbox.flush();
   }
 
   // Every handler: validate the message, check the sender's rate, then call the part that owns it,
@@ -167,7 +223,7 @@ export class TableRoom extends Room<{ client: TableClient }> {
         this.#refuse(client, type, error.code);
       }
 
-      if (!quietIntents.has(type)) this.#outbox.flush();
+      if (!quietIntents.has(type)) this.#changed();
     });
   }
 
