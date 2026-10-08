@@ -17,6 +17,9 @@ export const glow = {
   bulb: glowing(paint.lamp, 4),
   // The pinball machine's dot-matrix display: its lit dots bloom.
   display: new Color(1, 1, 1).multiplyScalar(2.4),
+  // The jukebox's bubble tubes and the pinball machine's coin slots: a softer glow.
+  tube: glowing(paint.lamp, 1.5),
+  slot: glowing(suitPaint.red.main, 1.8),
 };
 
 // The four card colours, glowing: the colour in play under the pile, a Wild's wave (spec §8.1).
@@ -37,4 +40,9 @@ export const furniture = {
   sauce: new Color(suitPaint.red.deep),
   canRed: new Color(suitPaint.red.main),
   canBlue: new Color(suitPaint.blue.main),
+  // Chrome, warmed by the lamplight: the pinball machine's legs and rails, the jukebox's grille.
+  chrome: new Color(paint.shade),
+  // A teal throw pillow on the loveseat.
+  pillow: new Color(token('colors.player.teal')).multiplyScalar(0.7),
+  record: new Color(paint.wild),
 };

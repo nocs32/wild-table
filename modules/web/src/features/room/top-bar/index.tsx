@@ -18,13 +18,14 @@ import {
 } from './styled-components';
 
 // The brand, the table's link, who's here, the rule book (always one click away, spec §9.1),
-// sound, language and Share.
+// sound, language and Share. A phone has no room for the link: its browser shows it, and Share
+// copies it.
 export const RoomTopBar = observer(function RoomTopBar(): ReactElement {
-  const { locale, room, ruleBook } = useRootStore();
+  const { locale, room, ruleBook, ui } = useRootStore();
   const { t } = locale;
 
   return (
-    <RoomTopBarRoot>
+    <RoomTopBarRoot compact={ui.layout.isCompact}>
       <RoomTopBarStart>
         <RoomTopBarBrand>
           <LogoMark />
@@ -38,7 +39,7 @@ export const RoomTopBar = observer(function RoomTopBar(): ReactElement {
           </RoomTopBarReconnecting>
         )}
       </RoomTopBarStart>
-      <RoomTopBarLink />
+      {!ui.layout.isCompact && <RoomTopBarLink />}
       <RoomTopBarEnd>
         <RoomTopBarPeople />
         <Button tone="secondary" size="sm" type="button" title={t('book.openHint')} aria-label={t('book.openHint')} onClick={() => ruleBook.open()}>

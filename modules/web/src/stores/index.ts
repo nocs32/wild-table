@@ -27,7 +27,7 @@ export class RootStore {
     this.ruleBook = new RuleBookStore({ t: this.locale.t, art: this.art, settings: this.room.game.settings, device: services.device });
     this.sound = new SoundStore({ t: this.locale.t, sounds: services.sounds, preferences: services.preferences });
     this.graphics = new GraphicsStore({ t: this.locale.t, preferences: services.preferences, now: services.now, notify: (text) => this.room.game.captions.note(text) });
-    this.table = new TableStore({ t: this.locale.t, random: services.random, schedule: services.schedule, now: services.now, sounds: services.sounds, game: this.room.game });
+    this.table = new TableStore({ t: this.locale.t, random: services.random, schedule: services.schedule, now: services.now, sounds: services.sounds, game: this.room.game, layout: this.ui.layout });
   }
 }
 

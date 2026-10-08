@@ -5,7 +5,6 @@ import { useCardGlowTexture, useCardTexture } from '../use-textures';
 import { RoomTableRoundBell } from './bell';
 import { RoomTableRoundCard } from './card';
 import { RoomTableRoundDeck } from './deck';
-import { RoomTableRoundFigure } from './figure';
 import { RoomTableRoundFuse } from './fuse';
 import { RoomTableRoundOrbs } from './orbs';
 import { RoomTableRoundPile } from './pile';
@@ -15,12 +14,12 @@ import { useRoomTableRoundFrames } from './use-frames';
 // A round on the 3D table (spec §4.3, §8): the deck and the pile in the middle with the colour in
 // play and the direction ring, every card in play, your hand along the bottom of the view, each
 // player's place card round the rail, the Last card! bell, the colour orbs after your Wild, and your
-// fuse burning along the rail in your turn's last seconds; and the other players as stick figures.
+// fuse burning along the rail in your turn's last seconds. The players' figures are the scene's.
 export const RoomTableRound = observer(function RoomTableRound(): ReactElement {
   const { art, room, table } = useRootStore();
   const back = useCardTexture(art.backCanvas());
   const halo = useCardGlowTexture();
-  const register = useRoomTableRoundFrames(table.round, room.game);
+  const register = useRoomTableRoundFrames(table, room.game);
 
   return (
     <group>
@@ -34,9 +33,6 @@ export const RoomTableRound = observer(function RoomTableRound(): ReactElement {
       {room.game.turn.isBurning && <RoomTableRoundFuse />}
       {room.game.match.seats.map((seat) => (
         <RoomTableRoundSeat key={seat.id} seat={seat} />
-      ))}
-      {room.game.moods.figures.map((view) => (
-        <RoomTableRoundFigure key={view.seat} view={view} />
       ))}
     </group>
   );

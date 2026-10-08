@@ -2,19 +2,24 @@ import { observer } from 'mobx-react-lite';
 import type { ReactElement } from 'react';
 import { useRootStore } from '../../../../stores/use-root-store';
 import { furniture, glow } from '../palette';
+import { RoomTableRoomJukeboxFront } from './jukebox-front';
 import { useRoomTableRoomJukebox } from './use-jukebox';
 
-// The jukebox at the back left: a dark cabinet under a rounded top, its arches glowing pink and
-// amber and its front cyan. Seen as glow and silhouette, so simple shapes do. Its lights flash when
-// someone wins a round.
+// The jukebox at the back left (spec §8.1): a walnut cabinet on a dark plinth under a rounded top,
+// its arches glowing pink and amber, bubble tubes up its sides, and a record behind the glowing
+// window. Its lights flash when someone wins a round.
 export const RoomTableRoomJukebox = observer(function RoomTableRoomJukebox(): ReactElement {
   const { table } = useRootStore();
   const lights = useRoomTableRoomJukebox(table.round.effects);
 
   return (
     <group position={[-1.95, -0.82, -3.4]} rotation-y={0.3}>
-      <mesh position={[0, 0.7, 0]}>
-        <boxGeometry args={[1.1, 1.4, 0.6]} />
+      <mesh position={[0, 0.06, 0]}>
+        <boxGeometry args={[1.22, 0.12, 0.68]} />
+        <meshStandardMaterial color={furniture.ink} roughness={0.6} />
+      </mesh>
+      <mesh position={[0, 0.76, 0]}>
+        <boxGeometry args={[1.1, 1.28, 0.6]} />
         <meshStandardMaterial color={furniture.wood} roughness={0.5} />
       </mesh>
       <mesh position={[0, 1.4, 0]} rotation-x={Math.PI / 2}>
@@ -29,10 +34,7 @@ export const RoomTableRoomJukebox = observer(function RoomTableRoomJukebox(): Re
         <torusGeometry args={[0.36, 0.025, 8, 48, Math.PI]} />
         <meshBasicMaterial ref={lights.inner} color={glow.amber} toneMapped={false} />
       </mesh>
-      <mesh position={[0, 0.75, 0.305]}>
-        <planeGeometry args={[0.7, 0.5]} />
-        <meshBasicMaterial color={glow.cyan} toneMapped={false} transparent opacity={0.35} />
-      </mesh>
+      <RoomTableRoomJukeboxFront />
     </group>
   );
 });

@@ -15,7 +15,9 @@ export interface Flight {
   emoji: string;
   lane: FlightLane;
   sway: FlightSway;
-  // Who sent it; null for your own reactions (no name tag).
+  // Whose it is: a member's id, or '' for your own.
+  from: string;
+  // The name tag under it: only on the first of someone's stream, never on your own.
   sender: string | null;
 }
 
@@ -37,7 +39,10 @@ export interface RoomReactionsDeps {
 export const defaultQuickReactions: readonly string[] = ['😂', '👏', '🔥', '🤔', '👀', '🃏'];
 
 const quickSize = 6;
-const maxFlights = 60;
+// However hard anyone holds a button down, no more than this many of theirs are in the air at once,
+// and no more than `maxFlights` in all, so a stream never covers a phone's screen.
+const perSender = 5;
+const maxFlights = 20;
 const holdDelayMs = 350;
 const streamIntervalMs = 160;
 
@@ -68,15 +73,15 @@ export class RoomReactionsStore {
     return this.quick.map((emoji) => ({ emoji, label: this.#deps.t('reactions.react', { emoji }) }));
   }
 
-  // Our own reaction: it flies here at once and goes to everyone else.
+  // Our own reaction: it flies here at once and goes to everyone else, unless enough of ours are
+  // in the air already.
   fire(emoji: string): void {
-    this.#launch(emoji, pickFrom(flightLanes, this.#deps.random, 'l5'), null);
-    this.#deps.send(emoji);
+    if (this.#launch(emoji, pickFrom(flightLanes, this.#deps.random, 'l5'), '', null)) this.#deps.send(emoji);
   }
 
   // Someone else's reaction, with their name on it.
   receive(emoji: string, senderId: string, senderName: string): void {
-    this.#launch(emoji, laneOf(senderId), senderName);
+    this.#launch(emoji, laneOf(senderId), senderId, senderName);
   }
 
   land(id: string): void {
@@ -113,9 +118,17 @@ export class RoomReactionsStore {
     this.quick = [emoji, ...this.quick.filter((quickEmoji) => quickEmoji !== emoji)].slice(0, quickSize);
   }
 
-  #launch(emoji: string, lane: FlightLane, sender: string | null): void {
-    const flight: Flight = { id: this.#deps.createId(), emoji, lane, sway: pickFrom(flightSways, this.#deps.random, 'gentle'), sender };
+  // Sends one up, unless too many of the sender's are in the air: says whether it went.
+  #launch(emoji: string, lane: FlightLane, from: string, name: string | null): boolean {
+    const theirs = this.flights.filter((flight) => flight.from === from).length;
+
+    if (theirs >= perSender) return false;
+
+    const sender = theirs === 0 ? name : null;
+    const flight: Flight = { id: this.#deps.createId(), emoji, lane, sway: pickFrom(flightSways, this.#deps.random, 'gentle'), from, sender };
 
     this.flights = [...this.flights, flight].slice(-maxFlights);
+
+    return true;
   }
 }

@@ -18,13 +18,15 @@ export const RoomRoundRoot = styled('div', {
     '@media (max-height: 540px)': { paddingTop: '6px', gap: '5px' },
   },
   variants: {
-    // A phone held sideways: the prompt and the captions keep to the top right, out of the way of
-    // the far seat, and the dock's rail keeps the left.
+    // A phone held sideways: the prompt and the captions keep to the top right, clear of the middle
+    // where the player across the table stands, and the dock's rail keeps the left. On someone
+    // else's turn the prompt is only as wide as its title, clear of the figures.
     compact: {
       true: {
         alignItems: 'flex-end',
         paddingLeft: '66px',
-        '& > section, & > ul': { width: 'min(380px, 50vw)' },
+        '& > section': { width: 'auto', maxWidth: 'min(380px, calc(50vw - 52px))' },
+        '& > ul': { width: 'min(380px, calc(50vw - 52px))' },
         '& h2': { fontSize: '14.5px' },
         '& section p': { fontSize: '12px', lineHeight: '1.3' },
         // Only the latest caption: there's no room for a stack.
@@ -34,6 +36,50 @@ export const RoomRoundRoot = styled('div', {
     },
   },
   defaultVariants: { compact: false },
+});
+
+// Your turn: lamplight breathing in from the edges of the view, round everything else.
+export const RoomRoundEdge = styled('div', {
+  base: {
+    position: 'absolute',
+    inset: '0',
+    zIndex: '-1',
+    pointerEvents: 'none',
+    animation: 'edgeGlow 1.6s ease-in-out infinite',
+  },
+});
+
+// "Your turn!" over the middle of the table as your turn begins: it pops up and fades away.
+export const RoomRoundAnnouncementRoot = styled('div', {
+  base: {
+    position: 'absolute',
+    inset: '0',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: '4vh',
+    pointerEvents: 'none',
+  },
+});
+
+export const RoomRoundAnnouncementText = styled('p', {
+  base: {
+    paddingBlock: '10px',
+    paddingInline: '30px',
+    borderRadius: '22px',
+    border: '3px solid',
+    borderColor: 'print.ink',
+    bg: 'lamp.glow',
+    color: 'print.ink',
+    fontFamily: 'display',
+    fontWeight: '900',
+    fontSize: '44px',
+    lineHeight: '1.1',
+    boxShadow: '0 6px 0 {colors.print.ink}, 0 0 40px 10px rgba(255, 201, 99, 0.55)',
+    opacity: '0',
+    animation: 'announce 1.5s ease-out forwards',
+    '@media (max-height: 540px)': { fontSize: '30px', paddingBlock: '6px', paddingInline: '20px' },
+  },
 });
 
 // The turn's prompt: a printed plate saying whose turn it is and what it's waiting for, with the

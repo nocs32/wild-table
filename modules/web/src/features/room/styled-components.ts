@@ -116,6 +116,8 @@ export const RoomFlightsSway = styled('div', {
     lineHeight: '1',
     filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.25))',
     _motionReduce: { animation: 'none' },
+    // A phone held sideways has little height to spare.
+    '@media (max-height: 540px)': { fontSize: '28px' },
   },
   variants: {
     sway: {

@@ -3,6 +3,7 @@ import { makeAutoObservable } from 'mobx';
 import type { Schedule, SoundCue, SoundsService } from '../../services';
 import type { Translate } from '../locale';
 import type { RoomGameStore } from '../room/game';
+import type { UiLayoutStore } from '../ui/layout';
 import { holdHeight, TableDeckStore } from './deck';
 import { TableRoundStore } from './round';
 import { roundHoldHeight } from './round/hand';
@@ -14,6 +15,7 @@ export interface TableDeps {
   now: () => number;
   sounds: SoundsService;
   game: RoomGameStore;
+  layout: UiLayoutStore;
 }
 
 // The things round the room to poke while you wait (spec §8.1): each wiggles when pointed at and
@@ -76,10 +78,12 @@ export class TableStore {
   readonly #now: () => number;
   readonly #sounds: SoundsService;
   readonly #game: RoomGameStore;
+  readonly #layout: UiLayoutStore;
 
   constructor(deps: TableDeps) {
     this.#t = deps.t;
     this.#game = deps.game;
+    this.#layout = deps.layout;
     this.#now = deps.now;
     this.#sounds = deps.sounds;
     this.deck = new TableDeckStore(deps);
@@ -87,17 +91,20 @@ export class TableStore {
     makeAutoObservable(this, { deck: false, round: false, pokes: false, sway: false }, { autoBind: true });
   }
 
-  // In a round your hand covers this share of the bottom of the view: the table moves up out of its way.
-  get bottomShare(): number {
-    return this.round.isShown ? 0.12 : 0;
+  // Pixels of the top of the view the turn's prompt covers in a round: the camera keeps the player
+  // across the table below it. On a phone the prompt keeps to the top right, clear of them.
+  get insetTop(): number {
+    if (!this.round.isShown) return 0;
+
+    return this.#layout.isCompact ? 4 : 96;
   }
 
   // Room left round the table in view: in a round the camera comes in close. At the podium it backs
   // off again, so the pinball machine scrolling the winner's name is in view.
   get cameraMargin(): number {
-    if (this.isJackpot) return 1.8;
+    if (this.isJackpot) return 1.6;
 
-    return this.round.isShown ? 0.2 : 0.9;
+    return this.round.isShown ? 0 : 0.9;
   }
 
   // What the pinball machine's score display scrolls (spec §8.1): who won the round, or the match.
@@ -170,6 +177,12 @@ export class TableStore {
   // over the next card).
   leave(left: TableHover): void {
     if (this.hovered && sameTarget(this.hovered, left)) this.hover(null);
+  }
+
+  // The pointer left a card in your hand. Which card is hovered is judged by where the pointer is
+  // across your hand, not by which card it's over, so whichever card that is goes back down.
+  leaveHand(): void {
+    if (this.hovered?.kind === 'hand') this.hover(null);
   }
 
   // The pointer anywhere on the page, while a card is pressed or held.

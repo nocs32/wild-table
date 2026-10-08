@@ -17,6 +17,14 @@ export const RoomTopBarRoot = styled('header', {
     color: 'chrome.fgStrong',
     md: { gridTemplateColumns: '1fr minmax(0, 440px) 1fr' },
   },
+  variants: {
+    // A phone: the brand and the buttons, no link between them.
+    compact: {
+      true: { gridTemplateColumns: 'auto minmax(0, 1fr)', md: { gridTemplateColumns: 'auto minmax(0, 1fr)' } },
+      false: {},
+    },
+  },
+  defaultVariants: { compact: false },
 });
 
 export const RoomTopBarStart = styled('div', {

@@ -4,7 +4,7 @@ import type { Schedule, SoundsService } from '../../../services';
 import type { RoomGameStore } from '../../room/game';
 import { TableRoundCardsStore } from './cards';
 import { TableRoundHandStore } from './hand';
-import { deckCardSpot, defaultHandFrame, pileCardSpot, type HandFrame } from './layout';
+import { deckCardSpot, defaultHandFrame, handIndexAt, pileCardSpot, type HandFrame } from './layout';
 import { placeCards, settleCards } from './settle';
 
 export interface TableRoundDeps {
@@ -78,7 +78,7 @@ export class TableRoundStore {
 
     this.#deps = deps;
     this.hand = new TableRoundHandStore({ hand: game.hand, captions: game.captions, body: (key) => this.cards.body(key), play: (...args) => this.playFromHand(...args) });
-    makeAutoObservable(this, { frame: false, pending: false, effects: false, cards: false, hand: false, step: false, setFrame: false, portraitSpot: false, isPending: false }, { autoBind: true });
+    makeAutoObservable(this, { frame: false, pending: false, effects: false, cards: false, hand: false, step: false, setFrame: false, portraitSpot: false, handCardAt: false, isPending: false }, { autoBind: true });
     game.listen({ played: this.receive, refused: this.refuse });
     reaction(() => [game.state, game.match.snapshot, game.hand.cards], () => this.#settleWhenIdle());
   }
@@ -163,6 +163,15 @@ export class TableRoundStore {
 
   setFrame(frame: HandFrame): void {
     this.frame = frame;
+  }
+
+  // Which of your cards a spot on your hand belongs to (see `handIndexAt`).
+  handCardAt(spot: readonly [number, number, number]): { key: string; index: number } | null {
+    const mine = this.cards.hand;
+    const index = handIndexAt(this.frame, mine.length, spot);
+    const key = mine[index];
+
+    return key === undefined ? null : { key, index };
   }
 
   // Every frame: where each card is headed, then a step of its springs.

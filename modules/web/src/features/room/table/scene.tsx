@@ -4,6 +4,7 @@ import { paint } from '../../../art/palette';
 import { useRootStore } from '../../../stores/use-root-store';
 import { RoomTableDeck } from './deck';
 import { RoomTableEffects } from './effects';
+import { RoomTableFigures } from './figures';
 import { RoomTableFurniture } from './furniture';
 import { RoomTableLeaflet } from './leaflet';
 import { RoomTableLights } from './lights';
@@ -22,7 +23,7 @@ import { useRoomTableShake } from './use-shake';
 export const RoomTableScene = observer(function RoomTableScene(): ReactElement {
   const { art, table, graphics } = useRootStore();
 
-  const camera = useRoomTableCamera({ left: table.insetLeft, right: table.insetRight, bottomShare: table.bottomShare, margin: table.cameraMargin });
+  const camera = useRoomTableCamera({ left: table.insetLeft, right: table.insetRight, top: table.insetTop, round: table.round.isShown, margin: table.cameraMargin });
 
   useRoomTableShake(table.round.effects, camera);
   useRoomTableFrameRate(graphics.drop);
@@ -35,6 +36,7 @@ export const RoomTableScene = observer(function RoomTableScene(): ReactElement {
       <RoomTableLights />
       <RoomTableRoom />
       <RoomTableFurniture />
+      <RoomTableFigures />
       {art.isReady && (
         <>
           {table.round.isShown ? <RoomTableRound /> : <RoomTableDeck />}

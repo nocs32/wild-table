@@ -29,6 +29,8 @@ export interface TurnPromptView {
   hint: string;
   // It's you who has to do something.
   isMine: boolean;
+  // Someone else is just taking their turn: on a phone, the title alone is enough.
+  isBrief?: boolean;
   actions: TurnActionView[];
 }
 
@@ -39,11 +41,26 @@ const fuseSeconds = 8;
 // or draw, play or keep a drawn card, pick a colour, answer a +2 or +4, or pick a hand to swap with.
 // And what the Last card! bell does now, and how long is left.
 export class RoomGameTurnStore {
+  // How many times your turn has come round: each time, "Your turn!" pops up over the table.
+  announced = 0;
   readonly #deps: RoomGameTurnDeps;
 
   constructor(deps: RoomGameTurnDeps) {
     this.#deps = deps;
     makeAutoObservable(this, {}, { autoBind: true });
+  }
+
+  // It's you the table is waiting for: the edges of the view glow until you've played.
+  get isMine(): boolean {
+    return this.prompt?.isMine ?? false;
+  }
+
+  get announcement(): string {
+    return this.#deps.t('round.yourTurn');
+  }
+
+  announce(): void {
+    this.announced += 1;
   }
 
   get secondsLeft(): number {
@@ -178,6 +195,6 @@ export class RoomGameTurnStore {
     const step = round?.step ?? 'play';
     const hint = step === 'answer' ? t(round?.top.kind === 'wild4' ? 'round.their.hit4' : 'round.their.hit2', { count: round?.pendingDraw ?? 0 }) : t(`round.their.${step}`);
 
-    return { title: t('round.their.title', { name }), hint, isMine: false, actions: [] };
+    return { title: t('round.their.title', { name }), hint, isMine: false, isBrief: true, actions: [] };
   }
 }

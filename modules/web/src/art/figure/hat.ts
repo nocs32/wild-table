@@ -28,55 +28,55 @@ const dome = (ctx: CanvasRenderingContext2D, { x, y, radius }: Head, lift: numbe
 
 // A cap worn sideways, brim out to the left.
 const cap = (ctx: CanvasRenderingContext2D, pass: HatPass, colour: string, head: Head): void => {
-  shape(ctx, pass, colour, () => dome(ctx, head, 6));
-  shape(ctx, pass, colour, () => ctx.ellipse(head.x - head.radius - 12, head.y - 7, 28, 7, -0.08, 0, Math.PI * 2));
-  shape(ctx, pass, colour, () => ctx.arc(head.x, head.y - head.radius - 9, 4, 0, Math.PI * 2));
+  shape(ctx, pass, colour, () => dome(ctx, head, 20));
+  shape(ctx, pass, colour, () => ctx.ellipse(head.x - head.radius - 12, head.y - 21, 28, 7, -0.08, 0, Math.PI * 2));
+  shape(ctx, pass, colour, () => ctx.arc(head.x, head.y - head.radius - 23, 4, 0, Math.PI * 2));
 };
 
 const bucket = (ctx: CanvasRenderingContext2D, pass: HatPass, colour: string, { x, y, radius }: Head): void => {
   shape(ctx, pass, colour, () => {
-    ctx.moveTo(x - 36, y - 16);
-    ctx.lineTo(x - 26, y - 64);
-    ctx.quadraticCurveTo(x, y - 74, x + 26, y - 64);
-    ctx.lineTo(x + 36, y - 16);
+    ctx.moveTo(x - 36, y - 28);
+    ctx.lineTo(x - 26, y - 70);
+    ctx.quadraticCurveTo(x, y - 80, x + 26, y - 70);
+    ctx.lineTo(x + 36, y - 28);
     ctx.closePath();
   });
 
-  shape(ctx, pass, colour, () => ctx.ellipse(x, y - 16, radius + 18, 10, 0, 0, Math.PI * 2));
+  shape(ctx, pass, colour, () => ctx.ellipse(x, y - 28, radius + 18, 10, 0, 0, Math.PI * 2));
 };
 
 // A beanie with a bobble; a bot's has a propeller instead.
 const beanie = (ctx: CanvasRenderingContext2D, pass: HatPass, colour: string, head: Head, propeller: boolean): void => {
-  shape(ctx, pass, colour, () => dome(ctx, head, 12));
-  shape(ctx, pass, colour, () => ctx.roundRect(head.x - head.radius - 4, head.y - 20, head.radius * 2 + 8, 14, 5));
+  shape(ctx, pass, colour, () => dome(ctx, head, 25));
+  shape(ctx, pass, colour, () => ctx.roundRect(head.x - head.radius - 4, head.y - 33, head.radius * 2 + 8, 14, 5));
 
   if (!propeller) {
-    shape(ctx, pass, colour, () => ctx.arc(head.x, head.y - head.radius - 18, 9, 0, Math.PI * 2));
+    shape(ctx, pass, colour, () => ctx.arc(head.x, head.y - head.radius - 31, 9, 0, Math.PI * 2));
 
     return;
   }
 
-  const top = head.y - head.radius - 14;
+  const top = head.y - head.radius - 27;
 
-  shape(ctx, pass, paint.ink, () => ctx.rect(head.x - 2, top - 16, 4, 16));
-  shape(ctx, pass, suitPaint.red.main, () => ctx.ellipse(head.x - 15, top - 18, 14, 5, 0.15, 0, Math.PI * 2));
-  shape(ctx, pass, suitPaint.yellow.main, () => ctx.ellipse(head.x + 15, top - 18, 14, 5, -0.15, 0, Math.PI * 2));
+  shape(ctx, pass, paint.ink, () => ctx.rect(head.x - 2, top - 10, 4, 10));
+  shape(ctx, pass, suitPaint.red.main, () => ctx.ellipse(head.x - 15, top - 12, 14, 5, 0.15, 0, Math.PI * 2));
+  shape(ctx, pass, suitPaint.yellow.main, () => ctx.ellipse(head.x + 15, top - 12, 14, 5, -0.15, 0, Math.PI * 2));
 };
 
 const bandana = (ctx: CanvasRenderingContext2D, pass: HatPass, colour: string, { x, y, radius }: Head): void => {
-  shape(ctx, pass, colour, () => ctx.roundRect(x - radius - 1, y - 32, radius * 2 + 2, 14, 6));
+  shape(ctx, pass, colour, () => ctx.roundRect(x - radius - 1, y - 38, radius * 2 + 2, 14, 6));
 
   shape(ctx, pass, colour, () => {
-    ctx.moveTo(x + radius - 2, y - 26);
-    ctx.lineTo(x + radius + 20, y - 40);
-    ctx.lineTo(x + radius + 22, y - 16);
+    ctx.moveTo(x + radius - 2, y - 32);
+    ctx.lineTo(x + radius + 20, y - 46);
+    ctx.lineTo(x + radius + 22, y - 22);
     ctx.closePath();
   });
 };
 
 const visor = (ctx: CanvasRenderingContext2D, pass: HatPass, colour: string, { x, y, radius }: Head): void => {
-  shape(ctx, pass, colour, () => ctx.roundRect(x - radius - 1, y - 30, radius * 2 + 2, 9, 4));
-  shape(ctx, pass, colour, () => ctx.ellipse(x, y - 22, radius + 4, 10, 0, 0, Math.PI));
+  shape(ctx, pass, colour, () => ctx.roundRect(x - radius - 1, y - 38, radius * 2 + 2, 9, 4));
+  shape(ctx, pass, colour, () => ctx.ellipse(x, y - 30, radius + 4, 10, 0, 0, Math.PI));
 };
 
 const headphones = (ctx: CanvasRenderingContext2D, pass: HatPass, colour: string, { x, y, radius }: Head): void => {

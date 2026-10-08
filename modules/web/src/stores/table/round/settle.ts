@@ -1,6 +1,7 @@
 import { isWild, type Card, type MatchSnapshot } from '@wild-table/protocol';
 import type { RoomGameStore } from '../../room/game';
 import type { TableRoundStore } from '.';
+import { heldCardSpot } from './figures';
 import { deckCardSpot, handCardSpot, pileCardSpot, seatCardSpot } from './layout';
 
 // Your hand sorted the way people sort theirs: by colour, then by number and symbol, wilds last.
@@ -39,8 +40,12 @@ export const placeCards = (round: TableRoundStore, game: RoomGameStore): void =>
   match.seats.forEach((seat) => {
     const keys = cards.seat(seat.id);
     const hovered = match.hovers.get(seat.id);
+    // On their turn, the others hold their cards up (see `heldCardSpot`).
+    const holding = seat.isTurn && game.state === 'round' && seat.id !== match.meId;
 
-    keys.forEach((key, index) => cards.body(key)?.to(seatCardSpot(seat.angle, index, keys.length, hovered === index, cards.faceOf(key) !== null)));
+    keys.forEach((key, index) =>
+      cards.body(key)?.to(holding ? heldCardSpot(frame, seat.angle, index, keys.length) : seatCardSpot(seat.angle, index, keys.length, hovered === index, cards.faceOf(key) !== null)),
+    );
   });
 };
 

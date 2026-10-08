@@ -5,9 +5,11 @@ import { RoomRoundTurnAction } from './turn-action';
 import { RoomRoundTurnActions, RoomRoundTurnHead, RoomRoundTurnHint, RoomRoundTurnRoot, RoomRoundTurnTime, RoomRoundTurnTitle } from './styled-components';
 
 // Whose turn it is and what it's waiting for (spec D7), with the buttons when it's yours: play or
-// keep a drawn card, pick a colour, take the cards or challenge, pick a hand to swap with.
+// keep a drawn card, pick a colour, take the cards or challenge, pick a hand to swap with. On a
+// phone, someone else's turn is only its title: there's no room to spare over the figures.
 export const RoomRoundTurn = observer(function RoomRoundTurn(): ReactElement | null {
-  const { turn } = useRootStore().room.game;
+  const { room, ui } = useRootStore();
+  const { turn } = room.game;
   const prompt = turn.prompt;
 
   if (!prompt) return null;
@@ -18,7 +20,7 @@ export const RoomRoundTurn = observer(function RoomRoundTurn(): ReactElement | n
         <RoomRoundTurnTitle>{prompt.title}</RoomRoundTurnTitle>
         <RoomRoundTurnTime urgent={turn.isBurning}>{turn.secondsLabel}</RoomRoundTurnTime>
       </RoomRoundTurnHead>
-      <RoomRoundTurnHint>{prompt.hint}</RoomRoundTurnHint>
+      {!(prompt.isBrief && ui.layout.isCompact) && <RoomRoundTurnHint>{prompt.hint}</RoomRoundTurnHint>}
       {prompt.actions.length > 0 && (
         <RoomRoundTurnActions>
           {prompt.actions.map((action) => (

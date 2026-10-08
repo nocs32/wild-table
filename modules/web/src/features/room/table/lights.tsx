@@ -33,7 +33,7 @@ export const RoomTableLights = observer(function RoomTableLights(): ReactElement
       />
       <pointLight position={[-2.2, 0.7, -2.9]} color={paint.neonPink} intensity={12} distance={8} decay={2} />
       <pointLight position={[2.2, 0.7, -2.8]} color={paint.neonCyan} intensity={12} distance={8} decay={2} />
-      <pointLight position={[0.3, 0.5, -3.9]} color={paint.neonPink} intensity={7} distance={5} decay={2} />
+      <pointLight position={[0.3, 1.1, -3.9]} color={paint.neonPink} intensity={7} distance={5} decay={2} />
       <directionalLight position={[0, 3, 6]} intensity={0.45} color={paint.card} />
     </>
   );
