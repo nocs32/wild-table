@@ -39,7 +39,8 @@ export interface RoundState {
   // The Last card! race (spec §5.6): open while this seat is down to one card and nobody has hit
   // the bell yet.
   race: SeatId | null;
-  // Hit the bell early, holding two cards on their turn: safe once they're down to one.
+  // Hit the bell early, holding two cards on their turn: safe once they're down to one. It lasts
+  // until that turn ends.
   earlyCall: SeatId | null;
   rules: HouseRules;
   // Who emptied their hand; the round is over.

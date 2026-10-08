@@ -112,7 +112,7 @@ export class TableStore {
 
   // The match is won: the pinball machine goes off like a jackpot.
   get isJackpot(): boolean {
-    return this.#game.state === 'podium';
+    return this.#game.state === 'podium' && !this.round.isReplaying;
   }
 
   // The height a held card floats at: the pointer is followed on that plane.

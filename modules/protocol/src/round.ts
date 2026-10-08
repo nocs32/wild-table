@@ -35,6 +35,8 @@ export interface RoundSnapshot {
   pendingDraw: number;
   // Whose Last card! race is open, if anyone's (§5.6).
   race: string | null;
+  // Who hit the bell early this turn, holding two cards: no race opens when they drop to one.
+  earlyCall: string | null;
   // While a Wild +4 waits for an answer: the colour in play it was played on. A challenge asks
   // whether its player held that colour (§5.5).
   challengeColour: CardColour | null;

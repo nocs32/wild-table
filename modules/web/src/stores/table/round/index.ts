@@ -62,10 +62,12 @@ export class TableRoundStore {
   colour: CardColour | null = null;
   direction: 1 | -1 = 1;
   deckSize = 0;
+  // The table's latest events are still being played out (a winning card flying in slow motion,
+  // say): the round's result waits for them.
+  isReplaying = false;
   #queue: PlayEvent[] = [];
   // How late the last beat came, in milliseconds.
   #late = 0;
-  #busy = false;
   #stampCount = 0;
   // The +4 on its way to the pile: it slams down.
   #slamming: string | null = null;
@@ -95,10 +97,10 @@ export class TableRoundStore {
   receive(events: readonly PlayEvent[]): void {
     this.#queue = [...this.#queue, ...events];
 
-    if (this.#busy) return;
+    if (this.isReplaying) return;
 
     // A moment's wait, so the snapshot and your hand that follow the events are in too.
-    this.#busy = true;
+    this.isReplaying = true;
     this.#later(60, () => this.#next());
   }
 
@@ -176,7 +178,7 @@ export class TableRoundStore {
     // Nothing left, or too far behind to be worth playing out: the cards settle where they are.
     if (!event || this.#late > lateMs || this.#queue.length > backlog) {
       this.#queue = [];
-      this.#busy = false;
+      this.isReplaying = false;
       this.#late = 0;
       this.#settle();
 
@@ -344,7 +346,7 @@ export class TableRoundStore {
   }
 
   #settleWhenIdle(): void {
-    if (!this.#busy) this.#settle();
+    if (!this.isReplaying) this.#settle();
   }
 
   #settle(): void {

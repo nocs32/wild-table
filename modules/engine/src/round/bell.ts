@@ -2,9 +2,14 @@
 // the race: that player is safe, or anyone else catches them and they draw 2. On your turn, holding
 // two cards, you may hit it early and play.
 import { drawCards, handOf } from './table.js';
-import type { MoveError, RoundContext, SeatId } from './types.js';
+import type { MoveError, RoundContext, RoundState, SeatId } from './types.js';
 
 export const caughtPenalty = 2;
+
+// On your turn, holding two cards, you may hit the bell before you play, once: then no race opens
+// when you drop to one. The call lasts until your turn ends.
+export const canCallEarly = (state: RoundState, seat: SeatId): boolean =>
+  seat === state.turn && state.step.kind === 'play' && handOf(state, seat).length === 2 && state.earlyCall !== seat;
 
 export const ringBell = (context: RoundContext, seat: SeatId): MoveError | null => {
   const { state } = context;
@@ -23,7 +28,7 @@ export const ringBell = (context: RoundContext, seat: SeatId): MoveError | null 
     return null;
   }
 
-  if (seat === state.turn && state.step.kind === 'play' && handOf(state, seat).length === 2) {
+  if (canCallEarly(state, seat)) {
     state.earlyCall = seat;
     context.events.push({ type: 'bell', seat, result: 'early', caught: null });
 

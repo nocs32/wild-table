@@ -73,14 +73,14 @@ export class RoomGameHandStore {
     return this.#deps.match.isMyTurn && !this.isBeatOn && (step === 'play' || step === 'answer');
   }
 
-  // The Last card! bell: anyone during a race, or you on your turn with two cards left (§5.6).
+  // The Last card! bell: anyone during a race, or you on your turn with two cards left, once (§5.6).
   get canRing(): boolean {
     const { match } = this.#deps;
     const round = match.round;
 
     if (!round || !match.isSeated) return false;
 
-    return round.race !== null || (match.isMyTurn && round.step === 'play' && this.cards.length === 2);
+    return round.race !== null || (match.isMyTurn && round.step === 'play' && this.cards.length === 2 && round.earlyCall !== match.meId);
   }
 
   get count(): number {

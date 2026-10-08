@@ -27,6 +27,8 @@ export const passTurn = (context: RoundContext, from: SeatId, skip = 0): void =>
 
   state.turn = seatAfter(state, from, 1 + skip);
   state.step = { kind: 'play' };
+  // A Last card! call made early lasts only for the turn it was made in.
+  state.earlyCall = null;
   context.events.push({ type: 'turn', seat: state.turn });
 };
 
