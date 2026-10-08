@@ -10,11 +10,11 @@ Node + Express 5 for HTTP, and Colyseus 0.18 for the live multiplayer rooms. The
 **Colyseus specifics:**
 - One process serves both: `new Server({ transport: new WebSocketTransport(), express: (app) => … })` in `src/index.ts`. Colyseus answers `/matchmake/*` and the WebSocket upgrades; everything else falls through to Express. No Redis (one process).
 - Room classes extend Colyseus `Room<{ client }>`. Class fields like `maxClients` and `autoDispose` are fine (Colyseus re-installs its accessors in `__init`).
-- **No Schema state, and no peeking** (spec D13, §10.4). The room sends each person their own view as messages, through `TableRoomOutbox` (the shapes are `TableEvents` in the protocol): `view` (shared, sent when it changed), `feed`, `reaction` and `error` events. With the game come `hand` (to one person: their cards), `peek` (the challenged hand, to the challenger only), and `played`, `drew`, `hover`, `emote` and `race` events for everyone. Messages arrive in order, which state patches don't promise. A browser gets nothing personal until it sends `sync`.
+- **No Schema state, and no peeking** (spec D13, §10.4). The room sends each person their own view as messages, through `TableRoomOutbox` (the shapes are `TableEvents` in the protocol): `view` (shared, sent when it changed, with card counts but no cards), `hand` (to one person: their cards, when they changed), `play` (what just happened, for everyone; drawn cards as a count), `peek` (the challenged hand, to the challenger only), `hover` and `emote`, `feed`, `reaction` and `error`. Messages arrive in order, which state patches don't promise. A browser gets nothing personal until it sends `sync`.
 - **Nobody sees another hand,** not even in pieces: others get a card count, and a card's face only once it's on the pile. A `drew` event tells the table how many, and the faces go to the drawer alone. The room test will record every message one player gets and check that no card from another hand appears in it (spec §11).
 - Message handlers follow rule 3 through the room's `#on(type, handle)`: valibot schema from the protocol, then the rate limit, then one call. Don't pass a schema to Colyseus's own `onMessage`/`validate`: a failed check there disconnects the sender. Refusals go back as an `error` event (`{ code }`).
 - Join options are checked in `onJoin`; a refused join throws `ServerError` with the typed code as its message.
-- Tests: unit tests per part (`*.test.ts` next to it) and a room test through a real server with `@colyseus/testing` (`table-room/index.test.ts`, on port 2592). Run `pnpm --filter @wild-table/core-api test`.
+- Tests: unit tests per part (`*.test.ts` next to it) and room tests through a real server with `@colyseus/testing`: the lobby (`index.test.ts`, port 2592) and a round played by two people with the no-peeking check (`no-peeking.test.ts`, port 2593). Run `pnpm --filter @wild-table/core-api test`.
 
 ## 1. Names follow the owner
 A unit that belongs to another starts with its owner's name:
@@ -80,12 +80,16 @@ src/
    ├─ index.ts              TableRoom: wires the parts to Colyseus
    ├─ members.ts            TableRoomMembers (+ member-names.ts: the names it hands out)
    ├─ feed.ts               TableRoomFeed
-   ├─ game.ts               TableRoomGame (the lobby and the settings, for now)
-   ├─ bots.ts               TableRoomBots (bots taking seats in the lobby, for now)
+   ├─ game.ts               TableRoomGame: the phases, the settings, the turn clock, rounds and the podium
+   ├─ match.ts              TableRoomMatch: who sits where, the scores, stand-ins
+   ├─ cards.ts              TableRoomCards: the engine's round, changed only by its moves
+   ├─ clock.ts              TableRoomClock: one deadline at a time (a turn, the pause after a round)
+   ├─ bots.ts               TableRoomBots: lobby seats, then playing bot seats and stand-ins
+   ├─ play-events.ts        the engine's events split into public and private (peeks)
    ├─ view.ts               what's sent: the shared view
    ├─ outbox.ts             TableRoomOutbox (what each person is sent, and when)
    ├─ rate-limits.ts        TableRoomRateLimits
    ├─ lifecycle.ts          TableRoomLifecycle
    ├─ error.ts              TableRoomError (a typed refusal)
-   └─ *.test.ts             (test-table.ts: a game with people at the table)
+   └─ *.test.ts             (test-table.ts: a game on a hand-moved clock; test-room.ts: a real room)
 ```

@@ -1,8 +1,7 @@
 // The game's phases, settings and limits (spec §4, §5.7, §5.8).
 
-// Only the lobby for now: rounds, the round's end and the podium come with the game itself
-// (spec §10.3: lobby → round → round end → next round | podium → lobby).
-export const gamePhases = ['lobby'] as const;
+// lobby → round → roundOver → round … → podium → lobby (spec §10.3).
+export const gamePhases = ['lobby', 'round', 'roundOver', 'podium'] as const;
 
 export type GamePhase = (typeof gamePhases)[number];
 

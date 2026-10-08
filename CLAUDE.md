@@ -26,7 +26,7 @@ The user plays Scribble Table, so knowing its words would spoil it. Nothing in t
   - Per-frame data (springs, drags, the deck's cards) lives in plain objects such as `stores/table/body.ts`, read in `useFrame`, never through React state (spec §8.3).
 - `modules/core-api`: backend. Node + Express 5 + Colyseus 0.18 (live tables), one process on :2570.
 - `modules/protocol`: the shared contract. Intent schemas, server events, error codes.
-- `modules/engine`: pure game logic (for now the seeded random generator and the settings), shared by both apps. The deck, legal plays, card effects, house rules, scoring and the bots go here.
+- `modules/engine`: pure game logic, shared by both apps: the deck, which cards fit and why, a round's moves and every card's effect (`round/`), the house rules, timeouts, scoring, the bots (`bots.ts`), the rule book's examples, and bot-match simulations (`round/simulate.ts`, run by the tests).
 - `eslint.config.mjs` + `eslint-rules/`: the house lint rules for every module.
 - `.scratch/`: spec and notes, ignored by git.
 
@@ -56,7 +56,7 @@ pnpm play          # build + serve at https://wild.timnox.dev from this PC throu
 ```
 
 ## Gotchas
-- **Ports are 5176, 2570 and 4176** (web, core-api, preview), one above Telephone Table's (5175, 2569, 4175), two above Scribble Table's and three above Felt Table's, so all four games can run at once. All are `strictPort`: a taken port fails loudly instead of moving. The room test uses 2592 (Telephone Table's uses 2591).
+- **Ports are 5176, 2570 and 4176** (web, core-api, preview), one above Telephone Table's (5175, 2569, 4175), two above Scribble Table's and three above Felt Table's, so all four games can run at once. All are `strictPort`: a taken port fails loudly instead of moving. The room tests use 2592 (the lobby) and 2593 (a round, no peeking); Telephone Table's uses 2591.
 - **Never stop the siblings' processes.** Felt, Scribble or Telephone Table may be running `pnpm play` for a game night. When a port is busy, check which project owns the process before touching it.
 - **TypeScript is pinned to 6.0.** typescript-eslint doesn't support TypeScript 7 yet. Don't upgrade it.
 - **pnpm workspaces:** the packages are listed in `pnpm-workspace.yaml`. Add a dependency with `pnpm --filter @wild-table/<module> add <pkg>`.

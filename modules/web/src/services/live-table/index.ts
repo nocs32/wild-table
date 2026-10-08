@@ -41,7 +41,13 @@ const listenToEvents = (room: Room, listeners: TableLinkListeners, now: () => nu
   const on = <K extends keyof TableEvents>(type: K, handle: (message: TableEvents[K]) => void): void => void room.onMessage(type, handle);
 
   on('view', (message) => view.view(message));
+  on('hand', (message) => view.hand(message));
   on('feed', (message) => view.feed(message));
+  // What happened at the table, peeks, hovers and emotes: the round's screens play them (M1).
+  on('play', () => undefined);
+  on('peek', () => undefined);
+  on('hover', () => undefined);
+  on('emote', () => undefined);
   on('reaction', listeners.reaction);
   on('error', listeners.refused);
 };

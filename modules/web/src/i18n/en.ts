@@ -135,6 +135,11 @@ export const en = {
     houseRuleOff: 'switched off {{rule}}',
     botAdded: 'sat a bot down: {{name}}',
     botRemoved: 'sent {{name}} the bot away',
+    matchStarted: 'dealt the cards: the match is on',
+    roundWon_one: 'won the round, scoring {{count}} point',
+    roundWon_other: 'won the round, scoring {{count}} points',
+    matchWon_one: 'won the match with {{count}} point',
+    matchWon_other: 'won the match with {{count}} points',
     setting: {
       targetScore: 'set the points to win to {{value}}',
       turnSeconds: 'set the time per turn to {{value}} s',

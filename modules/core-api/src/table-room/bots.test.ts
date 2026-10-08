@@ -1,14 +1,8 @@
 import { expect, test } from 'vitest';
-import { TableRoomBots } from './bots.js';
 import { TableRoomError } from './error.js';
 import { createTestGame } from './test-table.js';
 
-const setUp = (people: number): ReturnType<typeof createTestGame> & { bots: TableRoomBots } => {
-  const table = createTestGame(people);
-  let id = 0;
-
-  return { ...table, bots: new TableRoomBots({ members: table.members, feed: table.feed, game: table.game, createId: () => String(++id) }) };
-};
+const setUp = createTestGame;
 
 const events = (table: ReturnType<typeof setUp>): unknown[] => table.feed.items.map((item) => (item.kind === 'system' ? item.event : null));
 

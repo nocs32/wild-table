@@ -26,7 +26,10 @@ const createOutbox = (): Harness => {
 
   const outbox = new TableRoomOutbox({
     feed,
-    view: () => ({ members: [], game: { phase: 'lobby', settings: { ...defaultGameSettings, turnSeconds: state.turnSeconds } } }) satisfies TableRoomView,
+    view: () => ({ members: [], game: { phase: 'lobby', settings: { ...defaultGameSettings, turnSeconds: state.turnSeconds }, match: null } }) satisfies TableRoomView,
+    hand: () => null,
+    drainPlayed: () => [],
+    drainPeeks: () => [],
     now: () => 0,
     send: (to, type) => sent.push({ to, type }),
     broadcast: (type) => sent.push({ to: '*', type }),

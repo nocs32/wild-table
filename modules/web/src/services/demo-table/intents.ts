@@ -15,7 +15,7 @@ const ignore = (): void => undefined;
 
 // Each intent and the move that answers it. Reactions matter only to other people, and at the demo
 // table everyone else is a sample player or a bot. The demo sends everything as it changes, so
-// `sync` has nothing to catch up on.
+// `sync` has nothing to catch up on. The round's intents wait for the round's screens (M1).
 export const demoHandlers = (moves: DemoMoves): DemoHandlers => ({
   sync: ignore,
   updateSettings: (id, patch) => moves.updateSettings(id, patch),
@@ -24,4 +24,17 @@ export const demoHandlers = (moves: DemoMoves): DemoHandlers => ({
   rename: (id, { name }) => moves.rename(id, name),
   addBot: (id) => moves.addBot(id),
   removeBot: (id, { memberId }) => moves.removeBot(id, memberId),
+  start: ignore,
+  play: ignore,
+  draw: ignore,
+  keep: ignore,
+  pickColour: ignore,
+  challenge: ignore,
+  take: ignore,
+  swap: ignore,
+  bell: ignore,
+  hover: ignore,
+  emote: ignore,
+  nextRound: ignore,
+  playAgain: ignore,
 });

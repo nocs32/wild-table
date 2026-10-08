@@ -12,7 +12,7 @@ A card game you play with friends in the browser, on a 3D card table.
 
 It's a sibling of [Felt Table](https://github.com/nocs32/felt-table-jigsaw), the multiplayer jigsaw, [Scribble Table](https://github.com/nocs32/scribble-table), the drawing-and-guessing game, and [Telephone Table](https://github.com/nocs32/telephone-table), the telephone drawing game, and shares their stack, rules and look.
 
-> **Status:** building the web UI (M1). The lobby works on a 3D card table in the rec room: a deck to shuffle and throw, the match settings and house rules, lobby bots, and the rule book. Dealing and playing a round come next.
+> **Status:** the lobby and the rule book are built (M1), and the server plays whole matches (M2): rounds, every card, the house rules, the Last card! race, the turn clock, scores, the podium, and bots that play their seats and stand in for people. The round's screens in the browser come next.
 
 ## Stack
 

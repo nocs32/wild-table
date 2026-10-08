@@ -1,4 +1,4 @@
-import { feedMaxItems, type FeedItem, type GameSnapshot, type MemberSnapshot, type TableFeedEvent, type TableSnapshot, type TableViewEvent } from '@wild-table/protocol';
+import { feedMaxItems, type FeedItem, type GameSnapshot, type HandSnapshot, type MemberSnapshot, type TableFeedEvent, type TableSnapshot, type TableViewEvent } from '@wild-table/protocol';
 
 // Clock samples kept: the best of the recent ones wins.
 const maxSamples = 10;
@@ -11,6 +11,7 @@ export class LiveTableView {
   #members: MemberSnapshot[] = [];
   #game: GameSnapshot | null = null;
   #feed: FeedItem[] = [];
+  #hand: HandSnapshot | null = null;
   #samples: number[] = [];
   readonly #now: () => number;
   readonly #emit: (snapshot: TableSnapshot) => void;
@@ -24,6 +25,12 @@ export class LiveTableView {
     this.#samples = [...this.#samples, now - this.#now()].slice(-maxSamples);
     this.#members = members;
     this.#game = game;
+    this.#send();
+  }
+
+  // Your own cards, sent to you alone (spec D13).
+  hand(hand: HandSnapshot): void {
+    this.#hand = hand;
     this.#send();
   }
 
@@ -46,6 +53,8 @@ export class LiveTableView {
     this.#emit({
       members: this.#members,
       game,
+      // Only while a round is being played: between rounds nobody holds cards.
+      hand: game.phase === 'round' ? this.#hand : null,
       feed: this.#feed.map((item) => ({ ...item, at: local(item.at) })),
     });
   }
