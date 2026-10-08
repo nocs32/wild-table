@@ -1,39 +1,41 @@
-// The Last card! bell (spec §5.6). While someone is down to one card, the first to hit it wins
-// the race: that player is safe, or anyone else catches them and they draw 2. On your turn, holding
-// two cards, you may hit it early and play.
-import { drawCards, handOf } from './table.js';
+// The Last card! bell (spec §5.6): a block, not a race. While anyone else is down to one card, the
+// player whose turn it is may hit it instead of playing: everyone else on one card draws 2, the
+// ringer draws 1, and the turn passes. A sacrifice to stop whoever's about to win, once a round
+// each. It's always your own move, on your own turn, so nobody wins it by being quicker (a tap
+// beats a mouse).
+import { drawCards, handOf, passTurn } from './table.js';
 import type { MoveError, RoundContext, RoundState, SeatId } from './types.js';
 
-export const caughtPenalty = 2;
+// What the bell costs: the cards each player on one card draws, and the ringer's own.
+export const bellPenalty = 2;
+export const bellCost = 1;
 
-// On your turn, holding two cards, you may hit the bell before you play, once: then no race opens
-// when you drop to one. The call lasts until your turn ends.
-export const canCallEarly = (state: RoundState, seat: SeatId): boolean =>
-  seat === state.turn && state.step.kind === 'play' && handOf(state, seat).length === 2 && state.earlyCall !== seat;
+// Who a ring would hit: everyone else down to one card.
+export const bellTargets = (state: RoundState, seat: SeatId): SeatId[] => state.seats.filter((other) => other !== seat && handOf(state, other).length === 1);
+
+// On your turn, before you play or draw, when someone else is down to one card, if you haven't
+// rung it yet this round.
+export const canRingBell = (state: RoundState, seat: SeatId): boolean =>
+  seat === state.turn && state.step.kind === 'play' && !state.bellsRung.includes(seat) && bellTargets(state, seat).length > 0;
 
 export const ringBell = (context: RoundContext, seat: SeatId): MoveError | null => {
   const { state } = context;
-  const racer = state.race;
 
-  if (racer !== null) {
-    state.race = null;
+  if (seat !== state.turn) return 'NOT_YOUR_TURN';
 
-    if (racer === seat) {
-      context.events.push({ type: 'bell', seat, result: 'safe', caught: null });
-    } else {
-      context.events.push({ type: 'bell', seat, result: 'caught', caught: racer });
-      drawCards(context, racer, caughtPenalty, 'caught');
-    }
+  if (state.step.kind !== 'play') return 'WRONG_STEP';
 
-    return null;
-  }
+  const hit = bellTargets(state, seat);
 
-  if (canCallEarly(state, seat)) {
-    state.earlyCall = seat;
-    context.events.push({ type: 'bell', seat, result: 'early', caught: null });
+  if (state.bellsRung.includes(seat)) return 'BELL_USED';
 
-    return null;
-  }
+  if (hit.length === 0) return 'NO_TARGET';
 
-  return 'NO_RACE';
+  state.bellsRung = [...state.bellsRung, seat];
+  context.events.push({ type: 'bell', seat, hit });
+  hit.forEach((target) => drawCards(context, target, bellPenalty, 'bell'));
+  drawCards(context, seat, bellCost, 'bell');
+  passTurn(context, seat);
+
+  return null;
 };

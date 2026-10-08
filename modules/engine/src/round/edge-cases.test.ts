@@ -1,19 +1,15 @@
 import { expect, test } from 'vitest';
-import { botJumpInDelay } from '../bots.js';
-import { heldByBeat, stepMinMs, turnClockMs } from './clock.js';
+import { botJumpInDelay, plannedMove } from '../bots.js';
+import { stepMinMs, turnClockMs } from './clock.js';
 import { roundSnapshot } from './public.js';
 import { after, makeRound, move, play } from './test-round.js';
 import { legalMoves, seatView } from './view.js';
 
-test('a reshuffle while a Wild waits for its colour doesn’t make it look like the opening card', () => {
-  // The deck is empty: catching a on their Wild makes them draw 2, and the pile goes back in.
-  const start = { ...makeRound({ hands: { a: ['W', 'r2', 'b3'], b: ['y1', 'y2'], c: ['g1', 'g2'] }, top: 'r7', deck: [] }) };
-  const picking = after(play(start, 'a', 'W'));
-  const caught = after(move({ ...picking, race: 'a' }, 'b', { type: 'bell' }));
-
-  expect(caught.pile.length).toBe(1);
-
-  const picked = after(move(caught, 'a', { type: 'pickColour', colour: 'blue' }));
+test('a Wild picked down to a one-card pile isn’t taken for the opening card', () => {
+  // After a reshuffle the pile can be just the Wild: picking still passes the turn on.
+  const start = makeRound({ hands: { a: ['r2', 'b3'], b: ['y1', 'y2'], c: ['g1', 'g2'] }, top: 'W' });
+  const picking = { ...start, pile: start.pile.slice(-1), step: { kind: 'pickColour', opening: false } as const };
+  const picked = after(move(picking, 'a', { type: 'pickColour', colour: 'blue' }));
 
   expect([picked.turn, picked.step.kind]).toEqual(['b', 'play']);
 });
@@ -32,37 +28,12 @@ test('a +4 remembers the colour it was played on and the hand it was played from
   expect(event?.type === 'challenged' && event.bluff).toBe(true);
 });
 
-test('7-0: whoever ends up holding one card is in the Last card! race', () => {
-  const rules = { sevenZero: true };
-  const seven = after(play(makeRound({ hands: { a: ['r7', 'b1'], b: ['y1', 'y2', 'y3'], c: ['g1', 'g2'] }, top: 'r5', rules }), 'a', 'r7'));
+test('the clock: a new turn gets the whole time, a new step keeps what’s left, at least 8 s', () => {
+  const times = { turnMs: 20_000, leftMs: 3000 };
 
-  expect(seven.race).toBe('a');
-
-  const swapped = after(move(seven, 'a', { type: 'swap', target: 'b' }));
-
-  expect([swapped.hands.a?.length, swapped.hands.b?.length, swapped.race]).toEqual([3, 1, 'b']);
-
-  const zero = after(play(makeRound({ hands: { a: ['r0', 'b1'], b: ['y1', 'y2'], c: ['g1', 'g2', 'g3'] }, top: 'r5', rules }), 'a', 'r0'));
-
-  expect([zero.hands.b?.length, zero.race]).toEqual([1, 'b']);
-});
-
-test('the clock: a new turn gets the whole time, a new step keeps what’s left (at least 8 s), a bell nothing', () => {
-  const times = { turnMs: 20_000, leftMs: 3000, beatMs: 1500 };
-
-  expect(turnClockMs([{ type: 'turn', seat: 'b' }], false, times)).toBe(21_500);
-  expect(turnClockMs([{ type: 'kept', seat: 'a' }], false, { ...times, leftMs: 12_000 })).toBe(12_000);
-  expect(turnClockMs([], false, times)).toBe(stepMinMs);
-  expect(turnClockMs([], true, times)).toBeNull();
-});
-
-test('the race’s beat holds back every play but the racer’s, and the next player’s draw', () => {
-  const racing = { ...makeRound({ hands: { a: ['r2'], b: ['y1', 'y2'], c: ['r2'] }, top: 'r2', turn: 'b' }), race: 'a' };
-
-  expect(heldByBeat(racing, 'c', { type: 'play', cardId: 'x' })).toBe(true);
-  expect(heldByBeat(racing, 'b', { type: 'draw' })).toBe(true);
-  expect(heldByBeat(racing, 'a', { type: 'play', cardId: 'x' })).toBe(false);
-  expect(heldByBeat({ ...racing, race: null }, 'b', { type: 'draw' })).toBe(false);
+  expect(turnClockMs([{ type: 'turn', seat: 'b' }], times)).toBe(20_000);
+  expect(turnClockMs([{ type: 'kept', seat: 'a' }], { ...times, leftMs: 12_000 })).toBe(12_000);
+  expect(turnClockMs([], times)).toBe(stepMinMs);
 });
 
 test('bots jump in out of turn with the exact card on top, and only then', () => {
@@ -74,17 +45,11 @@ test('bots jump in out of turn with the exact card on top, and only then', () =>
   expect(botJumpInDelay(seatView(state, 'a'), legalMoves(state, 'a'), always)).toBeNull();
 });
 
-test('the early bell counts once a turn, and the call ends with the turn', () => {
-  const start = makeRound({ hands: { a: ['r2', 'b1'], b: ['y1', 'y2', 'y3'] }, top: 'r7', deck: ['g4', 'g5'] });
-  const called = after(move(start, 'a', { type: 'bell' }));
+test('bots ring the bell when someone else is on one card, unless they can win instead', () => {
+  const blocking = makeRound({ hands: { a: ['r2', 'b9'], b: ['y1'] }, top: 'r7' });
+  const winning = makeRound({ hands: { a: ['r2'], b: ['y1'] }, top: 'r7' });
+  const always = (): number => 0;
 
-  expect(roundSnapshot(called, 0).earlyCall).toBe('a');
-  expect(move(called, 'a', { type: 'bell' })).toEqual({ ok: false, error: 'NO_RACE' });
-  expect(legalMoves(called, 'a').some((one) => one.type === 'bell')).toBe(false);
-
-  // a draws instead of playing, and the turn moves on: the call is gone.
-  const drawn = after(move(called, 'a', { type: 'draw' }));
-  const passed = drawn.step.kind === 'drawn' ? after(move(drawn, 'a', { type: 'keep' })) : drawn;
-
-  expect([passed.turn, passed.earlyCall]).toEqual(['b', null]);
+  expect(plannedMove(seatView(blocking, 'a'), legalMoves(blocking, 'a'), always)).toEqual({ type: 'bell' });
+  expect(plannedMove(seatView(winning, 'a'), legalMoves(winning, 'a'), always)?.type).toBe('play');
 });

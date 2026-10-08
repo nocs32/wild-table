@@ -36,12 +36,8 @@ export interface RoundState {
   // The last Wild +4, for a challenge: who played it, whether it was a bluff, the colour in play
   // it was played on, and the hand they held then (what the challenger gets to see).
   wild4: { seat: SeatId; bluff: boolean; colour: CardColour; hand: Card[] } | null;
-  // The Last card! race (spec §5.6): open while this seat is down to one card and nobody has hit
-  // the bell yet.
-  race: SeatId | null;
-  // Hit the bell early, holding two cards on their turn: safe once they're down to one. It lasts
-  // until that turn ends.
-  earlyCall: SeatId | null;
+  // Who has hit the Last card! bell this round: once each (spec §5.6).
+  bellsRung: SeatId[];
   rules: HouseRules;
   // Who emptied their hand; the round is over.
   winner: SeatId | null;
@@ -61,7 +57,9 @@ export type RoundEvent =
   | { type: 'challenged'; seat: SeatId; against: SeatId; bluff: boolean; hand: Card[] }
   | { type: 'swapped'; seat: SeatId; with: SeatId }
   | { type: 'handsPassed'; direction: 1 | -1 }
-  | { type: 'bell'; seat: SeatId; result: 'safe' | 'early' | 'caught'; caught: SeatId | null }
+  // The Last card! bell (spec §5.6): `seat` hit it on their turn, and everyone in `hit` (down to
+  // one card) draws 2.
+  | { type: 'bell'; seat: SeatId; hit: SeatId[] }
   | { type: 'reshuffled' }
   | { type: 'turn'; seat: SeatId }
   | { type: 'roundOver'; winner: SeatId; points: number };
@@ -77,7 +75,7 @@ export type Move =
   | { type: 'swap'; target: SeatId }
   | { type: 'bell' };
 
-export type MoveError = 'NOT_YOUR_TURN' | 'NOT_IN_HAND' | 'DOES_NOT_FIT' | 'WRONG_STEP' | 'NO_RACE' | 'NOT_A_SEAT' | 'ROUND_OVER';
+export type MoveError = 'NOT_YOUR_TURN' | 'NOT_IN_HAND' | 'DOES_NOT_FIT' | 'WRONG_STEP' | 'NO_TARGET' | 'BELL_USED' | 'NOT_A_SEAT' | 'ROUND_OVER';
 
 export type MoveResult = { ok: true; state: RoundState; events: RoundEvent[] } | { ok: false; error: MoveError };
 

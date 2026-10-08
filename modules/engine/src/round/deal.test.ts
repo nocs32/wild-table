@@ -67,10 +67,13 @@ test('a seat sees its own hand and everyone’s counts, never another hand', () 
   expect(JSON.stringify(view)).not.toContain('b7');
 });
 
-test('legal moves: the cards that fit, drawing, and the bell when there’s a race', () => {
+test('legal moves: the cards that fit, drawing, and on your turn the bell when someone is on one card', () => {
   const state = makeRound({ hands: { a: ['r2', 'b7', 'W', 'gS'], b: ['y1', 'y2'] }, top: 'r7' });
+  const names = (moves: ReturnType<typeof legalMoves>): string[] => moves.map((one) => (one.type === 'play' ? one.cardId.split('#')[0] ?? '' : one.type));
 
-  expect(legalMoves(state, 'a').map((one) => (one.type === 'play' ? one.cardId.split('#')[0] : one.type))).toEqual(['r2', 'b7', 'W', 'draw']);
+  expect(names(legalMoves(state, 'a'))).toEqual(['r2', 'b7', 'W', 'draw']);
   expect(legalMoves(state, 'b')).toEqual([]);
-  expect(legalMoves({ ...state, race: 'a' }, 'b')).toEqual([{ type: 'bell' }]);
+  const oneLeft = makeRound({ hands: { a: ['r2', 'b7', 'W', 'gS'], b: ['y1'] }, top: 'r7' });
+
+  expect(names(legalMoves(oneLeft, 'a'))).toEqual(['r2', 'b7', 'W', 'draw', 'bell']);
 });

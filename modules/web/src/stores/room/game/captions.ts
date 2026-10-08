@@ -49,6 +49,7 @@ const isNamed = (line: FirstLine): line is NamedSpecial => (namedSpecials as rea
 export class RoomGameCaptionsStore {
   items: CaptionView[] = [];
   #seen = new Set<Special>();
+  #bellIntroduced = false;
   #next = 1;
   readonly #deps: RoomGameCaptionsDeps;
 
@@ -123,14 +124,31 @@ export class RoomGameCaptionsStore {
     this.#show(t(`round.captions.${key}`, { name: match.nameOf(seat), against: match.nameOf(against) }), 'wild4');
   }
 
-  #bell({ seat, result, caught }: Extract<PlayEvent, { type: 'bell' }>): void {
+  // Someone hit the Last card! bell (§5.6): who it hit, and what it cost, said to you where it's you.
+  #bell({ seat, hit }: Extract<PlayEvent, { type: 'bell' }>): void {
     const { t, match } = this.#deps;
     const me = match.meId;
-    const name = seat === me ? t('round.captions.you') : match.nameOf(seat);
-    const catches = seat === me ? 'caughtByYou' : caught === me ? 'caughtYou' : 'caught';
-    const key = result === 'caught' ? catches : result === 'early' ? (seat === me ? 'earlyYou' : 'early') : 'safe';
+    const others = hit.filter((target) => target !== me).map((target) => match.nameOf(target));
+    const values = { name: match.nameOf(seat), targets: this.#names(hit.map((target) => match.nameOf(target))), others: this.#names(others) };
+    const many = hit.length > 1 ? 'Many' : '';
+    const key = seat === me ? (`bellByYou${many}` as const) : !hit.includes(me) ? (`bell${many}` as const) : others.length > 0 ? 'bellOnYouAnd' : 'bellOnYou';
 
-    this.#show(t(`round.captions.${key}`, { name, caught: match.nameOf(caught) }), 'lastCard');
+    this.#show(t(`round.captions.${key}`, values), 'lastCard');
+  }
+
+  // The first time anyone's down to one card: what the bell does (spec D7).
+  introduceBell(): void {
+    if (this.#bellIntroduced) return;
+
+    this.#bellIntroduced = true;
+    this.#show(this.#deps.t('round.captions.firstBell'), 'lastCard');
+  }
+
+  // "Ace", "Ace and Chip", "Ace, Chip and Dice".
+  #names(names: readonly string[]): string {
+    const last = names.at(-1) ?? '';
+
+    return names.length < 2 ? last : `${names.slice(0, -1).join(', ')}${this.#deps.t('round.bell.and')}${last}`;
   }
 
   // A special card's first appearance: what it does, in one line.

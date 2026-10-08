@@ -2,7 +2,7 @@
 // the moves it has. Bots get exactly this, so they can't cheat; the cards that glow in a hand come
 // from the same list (spec D7).
 import { cardColours, type Card, type CardColour, type HouseRules } from '@wild-table/protocol';
-import { canCallEarly } from './bell.js';
+import { canRingBell } from './bell.js';
 import { playError } from './play.js';
 import { handOf, topCard } from './table.js';
 import type { Move, RoundState, SeatId, TurnStep } from './types.js';
@@ -22,7 +22,6 @@ export interface SeatView {
   counts: Record<SeatId, number>;
   deckSize: number;
   pendingDraw: number;
-  race: SeatId | null;
   rules: HouseRules;
 }
 
@@ -39,11 +38,8 @@ export const seatView = (state: RoundState, seat: SeatId): SeatView => ({
   counts: Object.fromEntries(state.seats.map((other) => [other, handOf(state, other).length])),
   deckSize: state.deck.length,
   pendingDraw: state.pendingDraw,
-  race: state.race,
   rules: state.rules,
 });
-
-const canRing = (state: RoundState, seat: SeatId): boolean => state.race !== null || canCallEarly(state, seat);
 
 const canChallenge = (state: RoundState): boolean => state.wild4 !== null && !state.rules.wild4AnyTime && topCard(state).kind === 'wild4';
 
@@ -63,8 +59,8 @@ const stepMoves = (state: RoundState, seat: SeatId): Move[] => {
   }
 };
 
-// Every move `seat` may make now: the cards it may play, the rest of its turn's choices, and the
-// bell when there's a race to win (or two cards left on its own turn).
+// Every move `seat` may make now: the cards it may play, the rest of its turn's choices, and on its
+// turn the bell when someone else is down to one card.
 export const legalMoves = (state: RoundState, seat: SeatId): Move[] => {
   if (state.winner !== null || !state.seats.includes(seat)) return [];
 
@@ -72,7 +68,7 @@ export const legalMoves = (state: RoundState, seat: SeatId): Move[] => {
     .filter((card) => playError(state, seat, card) === null)
     .map((card) => ({ type: 'play', cardId: card.id }));
 
-  const bell: Move[] = canRing(state, seat) ? [{ type: 'bell' }] : [];
+  const bell: Move[] = canRingBell(state, seat) ? [{ type: 'bell' }] : [];
 
-  return seat === state.turn ? [...plays, ...stepMoves(state, seat), ...bell] : [...plays, ...bell];
+  return seat === state.turn ? [...plays, ...stepMoves(state, seat), ...bell] : plays;
 };

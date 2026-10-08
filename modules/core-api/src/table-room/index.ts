@@ -37,8 +37,8 @@ const { table } = limits;
 // Intents that change nothing in the shared view: no view or feed to send afterwards.
 const quietIntents: ReadonlySet<TableIntentType> = new Set(['sync', 'react', 'hover', 'emote']);
 
-// Refusals that happen in normal play: a fast hand, a move that crossed another, a race lost.
-const expectedRefusals: ReadonlySet<TableErrorCode> = new Set(['RATE_LIMITED', 'WRONG_PHASE', 'NOT_YOUR_TURN', 'DOES_NOT_FIT', 'WRONG_STEP', 'NO_RACE', 'TOO_SOON', 'NOT_PLAYING']);
+// Refusals that happen in normal play: a fast hand, a move that crossed another.
+const expectedRefusals: ReadonlySet<TableErrorCode> = new Set(['RATE_LIMITED', 'WRONG_PHASE', 'NOT_YOUR_TURN', 'DOES_NOT_FIT', 'WRONG_STEP', 'NO_TARGET', 'BELL_USED', 'NOT_PLAYING']);
 
 // 12 characters of [0-9a-z]: about 62 bits, so table links can't be guessed.
 const createRoomId = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyz', 12);

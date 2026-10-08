@@ -27,8 +27,6 @@ export const passTurn = (context: RoundContext, from: SeatId, skip = 0): void =>
 
   state.turn = seatAfter(state, from, 1 + skip);
   state.step = { kind: 'play' };
-  // A Last card! call made early lasts only for the turn it was made in.
-  state.earlyCall = null;
   context.events.push({ type: 'turn', seat: state.turn });
 };
 
@@ -53,14 +51,11 @@ export const takeFromDeck = (context: RoundContext): Card | null => {
   return context.state.deck.pop() ?? null;
 };
 
-// Cards go into a hand. Someone in the Last card! race who gets cards is out of it.
+// Cards go into a hand.
 export const giveCards = (context: RoundContext, seat: SeatId, cards: Card[], reason: DrawReason): void => {
   const { state } = context;
 
   state.hands[seat] = [...handOf(state, seat), ...cards];
-
-  if (state.race === seat && cards.length > 0) state.race = null;
-
   context.events.push({ type: 'drew', seat, cards, reason });
 };
 
@@ -86,27 +81,4 @@ export const stepError = (context: RoundContext, seat: SeatId, kind: TurnStep['k
   if (seat !== context.state.turn) return 'NOT_YOUR_TURN';
 
   return context.state.step.kind === kind ? null : 'WRONG_STEP';
-};
-
-// Hands changed places (7-0): whoever now holds a single card is in the Last card! race, the
-// nearest in the order of play after `from` when there are several (spec §5.6, §5.7).
-export const raceAfterSwap = (context: RoundContext, from: SeatId): void => {
-  const { state } = context;
-
-  state.race = null;
-
-  for (let step = 1; step <= state.seats.length; step++) {
-    const seat = seatAfter(state, from, step);
-
-    if (handOf(state, seat).length === 1) {
-      state.race = seat;
-
-      return;
-    }
-  }
-};
-
-// The Last card! race ends, unanswered, once the next player plays or draws (spec §5.6).
-export const closeRace = (context: RoundContext, actor: SeatId): void => {
-  if (context.state.race !== null && context.state.race !== actor) context.state.race = null;
 };

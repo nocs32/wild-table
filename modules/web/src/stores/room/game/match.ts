@@ -16,8 +16,8 @@ export interface MatchSeatView {
   // A bot plays the seat: a bot's own, or one standing in for its person (spec §4.5).
   isBot: boolean;
   standIn: boolean;
-  // Down to one card, with the Last card! race open (spec §5.6).
-  isRacing: boolean;
+  // Down to one card: the Last card! bell can hit them (spec §5.6).
+  isOnLastCard: boolean;
   // Round the table in degrees: 0 is your own place at the near edge, then clockwise in the order
   // of play, the others spread across the far side (spec §9).
   angle: number;
@@ -29,7 +29,6 @@ export interface RoomGameMatchDeps {
   t: Translate;
   // Who's at the table: bots are marked there.
   members: () => readonly MemberSnapshot[];
-  now: () => number;
 }
 
 const arc = { from: 70, to: 290 };
@@ -42,8 +41,6 @@ export class RoomGameMatchStore {
   // Which card each other player's pointer is over, by its place in their hand (spec §8). Read by
   // the 3D table every frame, not shown through React.
   readonly hovers = new Map<string, number>();
-  // When the Last card! race now open began, on this browser's clock (spec §5.6).
-  raceOpenedAt: number | null = null;
   readonly #deps: RoomGameMatchDeps;
 
   constructor(deps: RoomGameMatchDeps) {
@@ -86,6 +83,16 @@ export class RoomGameMatchStore {
     return this.seats.find((seat) => seat.isMe) ?? null;
   }
 
+  // Who the Last card! bell would hit if you rang it: everyone else down to one card (spec §5.6).
+  get bellTargets(): MatchSeatView[] {
+    return this.others.filter((seat) => seat.isOnLastCard);
+  }
+
+  // Anyone at all is down to one card: the bell glows for everyone to see.
+  get isBellLit(): boolean {
+    return this.seats.some((seat) => seat.isOnLastCard);
+  }
+
   get turnSeat(): MatchSeatView | null {
     return this.seats.find((seat) => seat.isTurn) ?? null;
   }
@@ -104,11 +111,6 @@ export class RoomGameMatchStore {
   }
 
   receive(match: MatchSnapshot | null, meId: string): void {
-    const race = match?.round?.race ?? null;
-
-    if (race === null) this.raceOpenedAt = null;
-    else if (race !== this.round?.race) this.raceOpenedAt = this.#deps.now();
-
     this.snapshot = match;
     this.meId = meId;
 
@@ -136,7 +138,7 @@ export class RoomGameMatchStore {
       isTurn: round?.turn === seat.id,
       isBot,
       standIn: seat.standIn,
-      isRacing: round?.race === seat.id,
+      isOnLastCard: round !== null && seat.cards === 1,
       angle,
       cardsLabel: t('round.cards', { count: seat.cards }),
       scoreLabel: t('round.score', { count: seat.score }),

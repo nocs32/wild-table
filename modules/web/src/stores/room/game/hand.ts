@@ -1,5 +1,5 @@
 import { playBlock, type PlayBlock, type PlayContext } from '@wild-table/engine';
-import { isWild, raceBeatMs, type Card, type CardColour, type HandSnapshot, type HouseRules } from '@wild-table/protocol';
+import { isWild, type Card, type CardColour, type HandSnapshot, type HouseRules } from '@wild-table/protocol';
 import { computed, makeAutoObservable } from 'mobx';
 import type { Schedule } from '../../../services';
 import type { Translate } from '../../locale';
@@ -48,39 +48,31 @@ export class RoomGameHandStore {
     return { seat: match.meId, hand: this.cards, turn, step, drawnCardId: this.drawnCardId, top, colour, pendingDraw, rules: rules() };
   }
 
-  // A Last card! race just opened and is still on: for a moment the table holds back every play but
-  // the racer's (jump-ins too), and the next player's draw, so the race gets its chance (§5.6).
-  get isBeatOn(): boolean {
-    const { match, clock } = this.#deps;
-    const opened = match.raceOpenedAt;
-
-    return opened !== null && (match.round?.race ?? null) !== null && clock.now < opened + raceBeatMs;
-  }
-
-  get isHeldBack(): boolean {
-    return this.isBeatOn && this.#deps.match.round?.race !== this.#deps.match.meId;
-  }
-
   get playableIds(): ReadonlySet<string> {
     const context = this.context;
 
-    return new Set(context && !this.isHeldBack ? this.cards.filter((card) => playBlock(context, card) === null).map((card) => card.id) : []);
+    return new Set(context ? this.cards.filter((card) => playBlock(context, card) === null).map((card) => card.id) : []);
   }
 
   get canDraw(): boolean {
     const step = this.#deps.match.round?.step;
 
-    return this.#deps.match.isMyTurn && !this.isBeatOn && (step === 'play' || step === 'answer');
+    return this.#deps.match.isMyTurn && (step === 'play' || step === 'answer');
   }
 
-  // The Last card! bell: anyone during a race, or you on your turn with two cards left, once (§5.6).
+  // Have you hit the Last card! bell this round? Once each (§5.6).
+  get hasRung(): boolean {
+    const { match } = this.#deps;
+
+    return match.round?.bellsRung.includes(match.meId) ?? false;
+  }
+
+  // The Last card! bell (§5.6): on your turn, instead of playing, while anyone else is down to one
+  // card, once a round.
   get canRing(): boolean {
     const { match } = this.#deps;
-    const round = match.round;
 
-    if (!round || !match.isSeated) return false;
-
-    return round.race !== null || (match.isMyTurn && round.step === 'play' && this.cards.length === 2 && round.earlyCall !== match.meId);
+    return match.isMyTurn && match.round?.step === 'play' && !this.hasRung && match.bellTargets.length > 0;
   }
 
   get count(): number {
@@ -104,8 +96,6 @@ export class RoomGameHandStore {
     if (!card) return '';
 
     const block = context ? playBlock(context, card) : 'notYourTurn';
-
-    if (block === null && this.isHeldBack) return this.#deps.t('round.why.raceBeat', { name: this.#deps.match.nameOf(this.#deps.match.round?.race ?? null) });
 
     return block === null || !context ? '' : this.#blockText(block, context);
   }

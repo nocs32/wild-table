@@ -8,7 +8,7 @@ import type { PlayerColor } from './players.js';
 // colour after a wild, answer a +2 or +4, or pick whose hand to swap with (7-0).
 export type TurnStepKind = 'play' | 'drawn' | 'pickColour' | 'answer' | 'swap';
 
-export type DrawReason = 'draw' | 'plus' | 'caught' | 'challenge' | 'timeout';
+export type DrawReason = 'draw' | 'plus' | 'bell' | 'challenge' | 'timeout';
 
 // A seat in the match, as everyone sees it.
 export interface SeatSnapshot {
@@ -33,10 +33,8 @@ export interface RoundSnapshot {
   deckSize: number;
   // Cards waiting for the victim of a +2 or +4.
   pendingDraw: number;
-  // Whose Last card! race is open, if anyone's (§5.6).
-  race: string | null;
-  // Who hit the bell early this turn, holding two cards: no race opens when they drop to one.
-  earlyCall: string | null;
+  // Who has hit the Last card! bell this round: once each (§5.6).
+  bellsRung: string[];
   // While a Wild +4 waits for an answer: the colour in play it was played on. A challenge asks
   // whether its player held that colour (§5.5).
   challengeColour: CardColour | null;
@@ -76,7 +74,9 @@ export type PlayEvent =
   | { type: 'challenged'; seat: string; against: string; bluff: boolean }
   | { type: 'swapped'; seat: string; with: string }
   | { type: 'handsPassed'; direction: 1 | -1 }
-  | { type: 'bell'; seat: string; result: 'safe' | 'early' | 'caught'; caught: string | null }
+  // The Last card! bell (§5.6): `seat` hit it on their turn, and everyone in `hit`, down to one
+  // card, draws 2 (the ringer draws 1).
+  | { type: 'bell'; seat: string; hit: string[] }
   | { type: 'reshuffled' }
   // Out of time at this step: the table made the move for them (draw, keep, pick, take or swap).
   | { type: 'timedOut'; seat: string; step: TurnStepKind }

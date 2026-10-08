@@ -3,7 +3,7 @@
 import type { Card, DrawReason } from '@wild-table/protocol';
 import { checkPlay } from '../plays.js';
 import { takeTheCards } from './play.js';
-import { closeRace, giveCards, handOf, passTurn, takeFromDeck, topCard } from './table.js';
+import { giveCards, handOf, passTurn, takeFromDeck, topCard } from './table.js';
 import type { MoveError, RoundContext, SeatId } from './types.js';
 
 const fits = (context: RoundContext, seat: SeatId, card: Card): boolean => {
@@ -39,8 +39,6 @@ export const drawCard = (context: RoundContext, seat: SeatId, reason: DrawReason
   }
 
   if (state.step.kind !== 'play') return 'WRONG_STEP';
-
-  closeRace(context, seat);
 
   const drawn = drawUntilFits(context, seat);
   const last = drawn.at(-1);

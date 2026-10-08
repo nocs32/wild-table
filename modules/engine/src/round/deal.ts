@@ -62,8 +62,7 @@ export const dealRound = ({ seats, rules, handSize, first, random }: DealOptions
     step: { kind: 'play' },
     pendingDraw: 0,
     wild4: null,
-    race: null,
-    earlyCall: null,
+    bellsRung: [],
     rules,
     winner: null,
   };

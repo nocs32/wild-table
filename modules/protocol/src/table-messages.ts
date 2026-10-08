@@ -5,7 +5,7 @@ import { emoteLines } from './round.js';
 
 // Bumped whenever an intent or an event changes shape. A web app on another version is turned
 // away with PROTOCOL_MISMATCH and asked to reload.
-export const tableProtocolVersion = 5;
+export const tableProtocolVersion = 6;
 
 // The Colyseus room type the web app creates and joins.
 export const tableRoomName = 'table';

@@ -54,7 +54,7 @@ export const RoomTableRoundSeatStats = styled('span', {
   base: { fontSize: '11.5px', fontWeight: '600', color: 'print.muted', '@media (max-height: 540px)': { fontSize: '11px' } },
 });
 
-// "Last card!" on someone down to one card while the race is open.
+// "Last card!" on someone down to one card: the bell can hit them.
 export const RoomTableRoundSeatTag = styled('span', {
   base: {
     position: 'absolute',

@@ -1,7 +1,7 @@
 // Bot matches played start to finish, for the simulations (spec §11): every match must end, no
 // state may get stuck, and all 108 cards must always be somewhere.
 import type { GameSettings } from '@wild-table/protocol';
-import { botBellDelay, botMove, type BotLevel } from '../bots.js';
+import { botMove, type BotLevel } from '../bots.js';
 import { applyMove, applyTimeout } from './apply.js';
 import { dealRound, nextFirstSeat } from './deal.js';
 import { roundPoints } from './table.js';
@@ -23,22 +23,7 @@ const moveLimit = 4000;
 
 const cardCount = (state: RoundState): number => state.deck.length + state.pile.length + Object.values(state.hands).reduce((total, hand) => total + hand.length, 0);
 
-// Whoever rings the bell soonest wins the race.
-const bellRinger = (state: RoundState, random: () => number): SeatId | null => {
-  const delays = state.seats.flatMap((seat) => {
-    const delay = botBellDelay(seatView(state, seat), random);
-
-    return delay === null ? [] : [{ seat, delay }];
-  });
-
-  return delays.sort((a, b) => a.delay - b.delay)[0]?.seat ?? null;
-};
-
 const nextMove = (state: RoundState, levels: Record<SeatId, BotLevel>, random: () => number): MoveResult => {
-  const ringer = state.race === null ? null : bellRinger(state, random);
-
-  if (ringer) return applyMove(state, ringer, { type: 'bell' }, random);
-
   const seat = state.turn;
   const move = botMove(levels[seat] ?? 'random', seatView(state, seat), legalMoves(state, seat), random);
 

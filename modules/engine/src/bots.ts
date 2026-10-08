@@ -1,6 +1,6 @@
 // The bots (spec §6, §6.1). A bot sees exactly what a player in its seat would (a SeatView) and
 // picks one of that seat's legal moves, so it can't cheat, and the demo table and live tables run
-// the same code. The human-ish timing (the think, the bell) is the table's job.
+// the same code. The human-ish timing (the think, the jump-in) is the table's job.
 import { cardColours, isWild, type Card } from '@wild-table/protocol';
 import type { Move, SeatView } from './round/index.js';
 
@@ -8,10 +8,18 @@ export type BotLevel = 'random' | 'planner';
 
 const pick = <T>(items: readonly T[], random: () => number): T | undefined => items[Math.floor(random() * items.length)];
 
-const withoutBell = (moves: readonly Move[]): Move[] => moves.filter((move) => move.type !== 'bell');
+// Layer 1: any legal move, at random. It leaves the bell alone: that's a sacrifice, for planners.
+export const randomMove = (moves: readonly Move[], random: () => number): Move | null => pick(moves.filter((move) => move.type !== 'bell'), random) ?? null;
 
-// Layer 1: any legal move, at random.
-export const randomMove = (moves: readonly Move[], random: () => number): Move | null => pick(withoutBell(moves), random) ?? null;
+// How often the planner hits the Last card! bell when it can (spec §5.6): a sacrifice, so not always.
+const bellChance = 0.6;
+
+// The bell, when someone else is down to one card: unless it could win this turn instead.
+const bellBlock = (view: SeatView, moves: readonly Move[], random: () => number): Move | null => {
+  const canWin = view.hand.length === 1 && moves.some((move) => move.type === 'play');
+
+  return !canWin && moves.some((move) => move.type === 'bell') && random() < bellChance ? { type: 'bell' } : null;
+};
 
 const holdsColourOf = (hand: readonly Card[], card: Card): number => (isWild(card) ? 0 : hand.filter((other) => !isWild(other) && other.colour === card.colour).length);
 
@@ -78,7 +86,7 @@ const bestAnswer = (view: SeatView, moves: readonly Move[], random: () => number
 
 // Layer 2: the plan (spec §6). Out of turn it only ever jumps in.
 export const plannedMove = (view: SeatView, moves: readonly Move[], random: () => number): Move | null => {
-  const legal = withoutBell(moves);
+  const legal = moves.filter((move) => move.type !== 'bell');
 
   if (view.turn !== view.seat) return legal.find((move) => move.type === 'play') ?? null;
 
@@ -92,7 +100,7 @@ export const plannedMove = (view: SeatView, moves: readonly Move[], random: () =
     case 'drawn':
       return legal.find((move) => move.type === 'play') ?? { type: 'keep' };
     case 'play':
-      return bestPlay(view, legal, random) ?? { type: 'draw' };
+      return bellBlock(view, moves, random) ?? bestPlay(view, legal, random) ?? { type: 'draw' };
   }
 };
 
@@ -105,15 +113,4 @@ export const botJumpInDelay = (view: SeatView, moves: readonly Move[], random: (
   if (view.turn === view.seat || !moves.some((move) => move.type === 'play')) return null;
 
   return random() < 0.75 ? 700 + random() * 1000 : null;
-};
-
-// When a bot hits the Last card! bell, in milliseconds, or null when it doesn't (spec §6): almost
-// always for its own last card, a little slower and only sometimes to catch someone else, so
-// people can win the race.
-export const botBellDelay = (view: SeatView, random: () => number): number | null => {
-  if (view.race === view.seat) return random() < 0.95 ? 500 + random() * 900 : null;
-
-  if (view.race !== null) return random() < 0.55 ? 900 + random() * 1700 : null;
-
-  return null;
 };
