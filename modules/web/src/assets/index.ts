@@ -2,4 +2,6 @@
 // they always match.
 export { default as LogoMark } from './logo.svg?react';
 export * from './icons';
+export { ruleBookShots } from './rule-book';
+export * from './suits';
 export { soundUrls } from './sounds';

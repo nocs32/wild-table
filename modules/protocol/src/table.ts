@@ -1,4 +1,4 @@
-import type { GamePhase, GameSettingKey, GameSettings } from './game.js';
+import type { GamePhase, GameSettingKey, GameSettings, HouseRule } from './game.js';
 import type { PlayerColor } from './players.js';
 
 // What a table looks like to one person. The web app's stores read only these shapes, so the demo
@@ -10,6 +10,8 @@ export interface MemberSnapshot {
   name: string;
   color: PlayerColor;
   connected: boolean;
+  // A bot fills a seat from the lobby and plays by the same rules (spec D9, §6).
+  bot: boolean;
 }
 
 export interface GameSnapshot {
@@ -22,7 +24,11 @@ export type FeedEvent =
   | { type: 'joined' }
   | { type: 'left' }
   | { type: 'renamed'; name: string }
-  | { type: 'setting'; setting: GameSettingKey; value: number };
+  | { type: 'setting'; setting: GameSettingKey; value: number }
+  | { type: 'houseRule'; rule: HouseRule; on: boolean }
+  // Someone sat a bot down, or sent one away. `name` is the bot's.
+  | { type: 'botAdded'; name: string }
+  | { type: 'botRemoved'; name: string };
 
 interface FeedItemBase {
   id: string;

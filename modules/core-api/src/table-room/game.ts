@@ -1,5 +1,5 @@
-import { applySettings, changedSettings } from '@wild-table/engine';
-import { defaultGameSettings, type GamePhase, type GameSettings } from '@wild-table/protocol';
+import { applySettings, settingChanges } from '@wild-table/engine';
+import { defaultGameSettings, type GamePhase, type GameSettings, type GameSettingsPatch } from '@wild-table/protocol';
 import { TableRoomError } from './error.js';
 import type { TableRoomFeed } from './feed.js';
 import type { TableRoomMembers } from './members.js';
@@ -22,14 +22,14 @@ export class TableRoomGame {
   }
 
   // Anyone may change the settings in the lobby (spec D15); each change gets a feed line.
-  updateSettings(memberId: string, patch: Partial<GameSettings>): void {
+  updateSettings(memberId: string, patch: GameSettingsPatch): void {
     const author = this.#deps.members.get(memberId);
 
     if (this.phase !== 'lobby') throw new TableRoomError('WRONG_PHASE');
 
     const next = applySettings(this.settings, patch);
 
-    changedSettings(this.settings, next).forEach((setting) => this.#deps.feed.system(author, { type: 'setting', setting, value: next[setting] }));
+    settingChanges(this.settings, next).forEach((change) => this.#deps.feed.system(author, change));
     this.settings = next;
   }
 }

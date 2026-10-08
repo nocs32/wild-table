@@ -10,7 +10,8 @@ export interface PlayerView {
   color: PlayerColor;
   status: PresenceStatus;
   isMe: boolean;
-  // Shown after the name: "you", "reconnecting" or nothing.
+  isBot: boolean;
+  // Shown after the name: "you", "bot", "reconnecting" or nothing.
   note: string;
 }
 
@@ -20,7 +21,8 @@ export interface RoomPresenceDeps {
 
 const stackSize = 5;
 
-// Who is at the table, in join order. Each person is online ⇄ reconnecting.
+// Who is at the table, in the order they sat down. Each person is online ⇄ reconnecting; bots are
+// always there.
 export class RoomPresenceStore {
   members: MemberSnapshot[] = [];
   meId = '';
@@ -59,6 +61,10 @@ export class RoomPresenceStore {
     return this.#deps.t('people.show', { number: this.count });
   }
 
+  get bots(): PlayerView[] {
+    return this.views.filter((view) => view.isBot);
+  }
+
   get me(): PlayerView | undefined {
     return this.views.find((view) => view.isMe);
   }
@@ -78,7 +84,6 @@ export class RoomPresenceStore {
   }
 
   #toView(member: MemberSnapshot): PlayerView {
-    const { t } = this.#deps;
     const isMe = member.id === this.meId;
 
     return {
@@ -88,7 +93,18 @@ export class RoomPresenceStore {
       color: member.color,
       status: member.connected ? 'online' : 'reconnecting',
       isMe,
-      note: isMe ? t('people.you') : member.connected ? '' : t('people.reconnecting'),
+      isBot: member.bot,
+      note: this.#noteFor(member, isMe),
     };
+  }
+
+  #noteFor(member: MemberSnapshot, isMe: boolean): string {
+    const { t } = this.#deps;
+
+    if (isMe) return t('people.you');
+
+    if (member.bot) return t('people.bot');
+
+    return member.connected ? '' : t('people.reconnecting');
   }
 }

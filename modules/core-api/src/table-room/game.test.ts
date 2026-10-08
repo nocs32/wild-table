@@ -14,13 +14,14 @@ test('a new table waits in the lobby with the default settings', () => {
 test('anyone may change the settings; each change is clamped and gets a feed line', () => {
   const { game, feed } = createTestGame(2);
 
-  game.updateSettings('p1', { targetScore: 520, turnSeconds: 7 });
+  game.updateSettings('p1', { targetScore: 520, turnSeconds: 7, houseRules: { jumpIn: true } });
 
-  expect(game.settings).toEqual({ targetScore: 500, turnSeconds: 10 });
+  expect(game.settings).toEqual({ ...defaultGameSettings, targetScore: 500, turnSeconds: 10, houseRules: { ...defaultGameSettings.houseRules, jumpIn: true } });
 
   expect(feed.items.map((item) => (item.kind === 'system' ? item.event : null))).toEqual([
     { type: 'setting', setting: 'targetScore', value: 500 },
     { type: 'setting', setting: 'turnSeconds', value: 10 },
+    { type: 'houseRule', rule: 'jumpIn', on: true },
   ]);
 });
 
@@ -45,7 +46,7 @@ test('the view carries who is here and the game, nothing else', () => {
   members.drop('p1');
 
   expect(tableView(members.all, game).members).toEqual([
-    { id: 'p0', name: 'Player 0', color: expect.any(String), connected: true },
-    { id: 'p1', name: 'Player 1', color: expect.any(String), connected: false },
+    { id: 'p0', name: 'Player 0', color: expect.any(String), connected: true, bot: false },
+    { id: 'p1', name: 'Player 1', color: expect.any(String), connected: false, bot: false },
   ]);
 });

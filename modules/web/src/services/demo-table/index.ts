@@ -23,8 +23,8 @@ export const createDemoTable = (deps: DemoDeps): TableClientService => ({
       roomId: roomId ?? newRoomId(deps.random),
       meId,
       demo: {
-        addPlayer: () => referee.addBot(),
-        removePlayer: () => referee.removeBot(),
+        addPlayer: () => referee.addSample(),
+        removePlayer: () => referee.removeSample(),
       },
       send: (type, message) => referee.handle(meId, type, message),
       close: () => referee.dispose(),
@@ -33,13 +33,13 @@ export const createDemoTable = (deps: DemoDeps): TableClientService => ({
     // After `open` resolves, so the store already knows who it is. Three sample players sit
     // down with you, and a fourth a little later.
     deps.schedule(() => {
-      const me: DemoMember = { id: meId, name: cleanPersonName(name ?? '') || defaultName, color: freeColor([]), connected: true, isBot: false, language: 'en' };
+      const me: DemoMember = { id: meId, name: cleanPersonName(name ?? '') || defaultName, color: freeColor([]), connected: true, bot: false, sample: false, language: 'en' };
 
       referee.join(me);
-      [0, 1, 2].forEach(() => referee.addBot());
+      [0, 1, 2].forEach(() => referee.addSample());
     }, 0);
 
-    deps.schedule(() => referee.addBot(), 5000);
+    deps.schedule(() => referee.addSample(), 5000);
 
     return Promise.resolve({ ok: true, link });
   },

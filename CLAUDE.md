@@ -21,7 +21,9 @@ Setup commit first (M0), then each phase gets its own branch and PR, as in the s
 The user plays Scribble Table, so knowing its words would spoil it. Nothing in this game is secret from the user, and Wild Table has no word lists, but one rule guards the sibling's: **never open, decode or print** `../drawing-game/modules/core-api/src/words/word-list.b64`, and never show a word from it anywhere.
 
 ## Layout
-- `modules/web`: frontend. Vite + React 19 + TypeScript, Panda CSS, MobX, Ark UI, i18next (English and Ukrainian). The 3D table (React Three Fiber, drei, postprocessing, spec D4, §10.2) comes in M1, after the feel check: don't add those libraries before then.
+- `modules/web`: frontend. Vite + React 19 + TypeScript, Panda CSS, MobX, Ark UI, i18next (English and Ukrainian), and the 3D table with React Three Fiber, drei and postprocessing (spec D4, §10.2) in `features/room/table`.
+  - `src/art`: everything drawn by code (spec §8.4): the card faces and back, the felt, the panelling, the leaflet, the tent cards, the neon sign. Colours and typeface come from the Panda tokens.
+  - Per-frame data (springs, drags, the deck's cards) lives in plain objects such as `stores/table/body.ts`, read in `useFrame`, never through React state (spec §8.3).
 - `modules/core-api`: backend. Node + Express 5 + Colyseus 0.18 (live tables), one process on :2570.
 - `modules/protocol`: the shared contract. Intent schemas, server events, error codes.
 - `modules/engine`: pure game logic (for now the seeded random generator and the settings), shared by both apps. The deck, legal plays, card effects, house rules, scoring and the bots go here.
@@ -65,6 +67,7 @@ pnpm play          # build + serve at https://wild.timnox.dev from this PC throu
 - **Live tables live in core-api's memory:** `tsx watch` restarts core-api when you save a file there, and every table is gone. Open a new one. To play a live table alone, open its link in three or four tabs: each tab is its own person (its seat is kept in sessionStorage, so a reload gets it back).
 - **A dropped connection** keeps its seat for 20 seconds (`limits.ts`).
 - **Phones play in landscape only** (spec D20). The user's group is 3–4 coworkers, some on phones: check every screen at phone size, held sideways.
-- **The look is a stand-in** until M1 settles the rec room (spec §8.1): the stage is a plain CSS felt, and the lobby, chat and dock keep Telephone Table's paper-and-desk styling (its `notebook`, `desk` and `stationery` tokens). The accent is Radix "grass", matching the placeholder logo.
+- **The look: a 90s basement rec room** (spec D21, §8.1), set in `modules/web/panda/tokens.ts`. Two kinds of surface, used the same way everywhere: the room's own (the top bar, the dock, the chat, popovers) is dark walnut, brass trim and lamplit cream lettering; the game's printed things (the lobby's game cards, the rule leaflet, tent cards, the status card) are glossy card stock with ink and the four card colours. Avatars are poker chips, buttons are chunky arcade buttons, the typeface is Rubik throughout (it has Cyrillic). **Nothing in the UI is tilted**: the user asked for everything straight and aligned.
+- **Phones held sideways are "compact"** (`ui.layout`, under 900 px wide or 540 px tall): the lobby's cards share one column on the right, the dock stands up as a rail on the left, and the rule book fills the screen.
 - **Sounds** are CC0 recordings from Freesound, credited in `modules/web/src/assets/sounds/credits.md` (no music, spec D26). For now only the chime; generated sounds didn't sound good enough in the siblings, so new ones come from Freesound too.
 - **Dev handle:** in development the root store is `window.wildTable`, for checking state from the console or a test script, e.g. `wildTable.room.game.settings.targetScore` or `wildTable.room.presence.count`.

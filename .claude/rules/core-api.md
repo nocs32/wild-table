@@ -81,6 +81,7 @@ src/
    ├─ members.ts            TableRoomMembers (+ member-names.ts: the names it hands out)
    ├─ feed.ts               TableRoomFeed
    ├─ game.ts               TableRoomGame (the lobby and the settings, for now)
+   ├─ bots.ts               TableRoomBots (bots taking seats in the lobby, for now)
    ├─ view.ts               what's sent: the shared view
    ├─ outbox.ts             TableRoomOutbox (what each person is sent, and when)
    ├─ rate-limits.ts        TableRoomRateLimits

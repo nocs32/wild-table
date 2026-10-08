@@ -1,40 +1,40 @@
 import { observer } from 'mobx-react-lite';
 import type { ReactElement } from 'react';
-import { UsersIcon } from '../../../assets';
+import { LinkIcon, PlusIcon } from '../../../assets';
 import { useRootStore } from '../../../stores/use-root-store';
-import { Avatar } from '../../../ui';
-import {
-  RoomLobbyCard,
-  RoomLobbyCardTitle,
-  RoomLobbyPlayersItem,
-  RoomLobbyPlayersList,
-  RoomLobbyPlayersName,
-  RoomLobbyPlayersNote,
-  RoomLobbyPlayersSheet,
-} from './styled-components';
+import { Button, GameCard } from '../../../ui';
+import { RoomLobbyPlayersItem } from './players-item';
+import { RoomLobbyHint, RoomLobbyPlayersAdd, RoomLobbyPlayersFoot, RoomLobbyPlayersList } from './styled-components';
 
-// Everyone at the table.
+// Everyone at the table, and the seats still free: add a bot, or bring people over with the link.
 export const RoomLobbyPlayers = observer(function RoomLobbyPlayers(): ReactElement {
   const { locale, room } = useRootStore();
-  const { presence } = room;
+  const { t } = locale;
+  const { presence, seats, share } = room;
 
   return (
-    <RoomLobbyCard area="players" aria-label={locale.t('players.label')}>
-      <RoomLobbyPlayersSheet>
-        <RoomLobbyCardTitle>
-          <UsersIcon />
-          {presence.countLabel}
-        </RoomLobbyCardTitle>
-        <RoomLobbyPlayersList>
-          {presence.views.map((player) => (
-            <RoomLobbyPlayersItem key={player.id}>
-              <Avatar initial={player.initial} color={player.color} size="lg" presence={player.status} />
-              <RoomLobbyPlayersName>{player.name}</RoomLobbyPlayersName>
-              {player.note && <RoomLobbyPlayersNote>{player.note}</RoomLobbyPlayersNote>}
-            </RoomLobbyPlayersItem>
-          ))}
-        </RoomLobbyPlayersList>
-      </RoomLobbyPlayersSheet>
-    </RoomLobbyCard>
+    <GameCard suit="blue" title={t('people.title')} subtitle={seats.countLabel}>
+      <RoomLobbyPlayersList>
+        {presence.views.map((player) => (
+          <RoomLobbyPlayersItem key={player.id} player={player} />
+        ))}
+        {seats.canAddBot && (
+          <li>
+            <RoomLobbyPlayersAdd type="button" onClick={seats.addBot}>
+              <PlusIcon />
+              {t('lobby.addBot')}
+            </RoomLobbyPlayersAdd>
+          </li>
+        )}
+      </RoomLobbyPlayersList>
+      <RoomLobbyPlayersFoot>
+        <RoomLobbyHint>{seats.isFull ? t('lobby.full') : t('lobby.seatsHint')}</RoomLobbyHint>
+        <RoomLobbyHint>{t('lobby.inviteHint')}</RoomLobbyHint>
+        <Button tone="primary" type="button" onClick={share.copy}>
+          <LinkIcon />
+          {share.inviteLabel}
+        </Button>
+      </RoomLobbyPlayersFoot>
+    </GameCard>
   );
 });

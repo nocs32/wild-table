@@ -12,13 +12,13 @@ A card game you play with friends in the browser, on a 3D card table.
 
 It's a sibling of [Felt Table](https://github.com/nocs32/felt-table-jigsaw), the multiplayer jigsaw, [Scribble Table](https://github.com/nocs32/scribble-table), the drawing-and-guessing game, and [Telephone Table](https://github.com/nocs32/telephone-table), the telephone drawing game, and shares their stack, rules and look.
 
-> **Status:** setting up (M0). The table page, lobby settings, chat, reactions and the connection work, on live tables and on the demo table; the cards, the 3D table and the bots come next.
+> **Status:** building the web UI (M1). The lobby works on a 3D card table in the rec room: a deck to shuffle and throw, the match settings and house rules, lobby bots, and the rule book. Dealing and playing a round come next.
 
 ## Stack
 
 | Part | Tech |
 |---|---|
-| Web (`modules/web`) | React 19, TypeScript, Vite, Panda CSS, MobX, Ark UI, i18next. The 3D table will use React Three Fiber, drei and postprocessing. |
+| Web (`modules/web`) | React 19, TypeScript, Vite, Panda CSS, MobX, Ark UI, i18next, and React Three Fiber, drei and postprocessing for the 3D table |
 | API (`modules/core-api`) | Node.js, Express 5 and Colyseus 0.18 (run with `tsx`) |
 | Shared | `modules/protocol` (the contract between the two) and `modules/engine` (pure game logic) |
 | Tooling | pnpm workspaces, ESLint 10 + typescript-eslint, TypeScript 6.0 |

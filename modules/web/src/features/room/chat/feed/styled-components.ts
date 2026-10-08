@@ -11,7 +11,7 @@ export const RoomChatFeedMessageRoot = styled('article', {
     columnGap: '8px',
     paddingInline: '8px',
     paddingBlock: '2px',
-    _hover: { bg: 'rgba(38, 37, 31, 0.04)' },
+    _hover: { bg: 'bg.hover' },
   },
   variants: {
     startsGroup: {
@@ -31,11 +31,11 @@ export const RoomChatFeedMeta = styled('div', {
 });
 
 export const RoomChatFeedAuthor = styled('span', {
-  base: { fontSize: '15px', fontWeight: '900' },
+  base: { fontFamily: 'display', fontSize: '15px', fontWeight: '700' },
 });
 
 export const RoomChatFeedTime = styled('time', {
-  base: { fontSize: '12px', color: 'notebook.muted', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' },
+  base: { fontSize: '12px', color: 'fg.subtle', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' },
 });
 
 export const RoomChatFeedText = styled('p', {
@@ -51,10 +51,10 @@ export const RoomChatFeedSystemRoot = styled('div', {
     paddingInline: '8px',
     paddingBlock: '6px',
     fontSize: '13px',
-    color: 'notebook.muted',
+    color: 'fg.muted',
   },
 });
 
 export const RoomChatFeedSystemName = styled('span', {
-  base: { fontWeight: '700', color: 'notebook.ink' },
+  base: { fontWeight: '700', color: 'fg.default' },
 });

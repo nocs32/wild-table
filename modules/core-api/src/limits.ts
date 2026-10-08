@@ -24,6 +24,8 @@ export const limits = {
       chat: { count: 8, windowMs: 3000 },
       react: { count: 8, windowMs: 1000 },
       rename: { count: 10, windowMs: 10_000 },
+      addBot: { count: 10, windowMs: 5000 },
+      removeBot: { count: 10, windowMs: 5000 },
     } satisfies Record<TableIntentType, Rate>,
   },
 } as const;

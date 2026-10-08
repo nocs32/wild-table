@@ -16,7 +16,10 @@ export interface DemoMember {
   name: string;
   color: PlayerColor;
   connected: boolean;
-  isBot: boolean;
+  // A bot sat down from the lobby (🤖), as at a live table.
+  bot: boolean;
+  // A sample player: stands in for a person at the demo table, and says hello.
+  sample: boolean;
   language: DemoLanguage;
 }
 

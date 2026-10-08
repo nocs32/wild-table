@@ -10,7 +10,7 @@ export const globalCss = defineGlobalStyles({
   body: {
     fontFamily: 'body',
     fontSize: '15px',
-    lineHeight: '1.47',
+    lineHeight: '1.45',
     color: 'fg.default',
     bg: 'chrome.app',
     overflow: 'hidden',
@@ -21,6 +21,6 @@ export const globalCss = defineGlobalStyles({
     color: 'inherit',
   },
   '::selection': {
-    bg: 'rgba(70, 167, 88, 0.4)',
+    bg: 'rgba(245, 182, 42, 0.4)',
   },
 });

@@ -1,16 +1,27 @@
-import { applySettings, changedSettings } from '@wild-table/engine';
-import { chatMaxLength, cleanPersonName, defaultGameSettings, gameLimits, type GamePhase, type GameSettings, type TableIntents, type TableIntentType } from '@wild-table/protocol';
+import { applySettings, settingChanges } from '@wild-table/engine';
+import {
+  chatMaxLength,
+  cleanPersonName,
+  defaultGameSettings,
+  gameLimits,
+  type GamePhase,
+  type GameSettings,
+  type GameSettingsPatch,
+  type TableIntents,
+  type TableIntentType,
+} from '@wild-table/protocol';
 import type { TableLinkListeners } from '../types';
 import { DemoBots } from './bots';
 import { DemoFeed } from './feed';
 import { demoHandlers, type DemoHandlers } from './intents';
-import { nextBot } from './rules';
+import { newBot, nextSample } from './rules';
 import type { DemoDeps, DemoMember, DemoTableState } from './types';
 import { snapshotFor } from './view';
 
 // Plays the server's part in the browser, with sample players (spec D18): who's at the table, the
-// settings and the chat. The game itself comes later. The real server (core-api) takes over behind
-// the same snapshots and intents.
+// bots, the settings and the chat. The game itself comes later. The real server (core-api) takes
+// over behind the same snapshots and intents, with the same rules: bots sit only in free seats, and
+// someone arriving at a full table takes the newest bot's seat.
 export class DemoReferee implements DemoTableState {
   members: DemoMember[] = [];
   phase: GamePhase = 'lobby';
@@ -29,15 +40,20 @@ export class DemoReferee implements DemoTableState {
     this.#handlers = demoHandlers(this);
   }
 
+  get #isFull(): boolean {
+    return this.members.length >= gameLimits.maxPlayers;
+  }
+
   handle<T extends TableIntentType>(memberId: string, type: T, message: TableIntents[T]): void {
     (this.#handlers[type] as (memberId: string, message: TableIntents[T]) => void)(memberId, message);
   }
 
   join(member: DemoMember): void {
+    this.#makeRoom();
     this.members.push(member);
     this.#feed.system(member, { type: 'joined' });
 
-    if (member.isBot) this.#bots.greet(member);
+    if (member.sample) this.#bots.greet(member);
 
     this.#emit();
   }
@@ -52,14 +68,14 @@ export class DemoReferee implements DemoTableState {
     this.#emit();
   }
 
-  updateSettings(memberId: string, patch: Partial<GameSettings>): void {
+  updateSettings(memberId: string, patch: GameSettingsPatch): void {
     const author = this.#member(memberId);
 
     if (this.phase !== 'lobby' || !author) return;
 
     const next = applySettings(this.settings, patch);
 
-    changedSettings(this.settings, next).forEach((setting) => this.#feed.system(author, { type: 'setting', setting, value: next[setting] }));
+    settingChanges(this.settings, next).forEach((change) => this.#feed.system(author, change));
     this.settings = next;
     this.#emit();
   }
@@ -85,21 +101,51 @@ export class DemoReferee implements DemoTableState {
     this.#emit();
   }
 
-  // Demo buttons.
-  addBot(): void {
-    const bot = nextBot(this.members, this.#deps.createId);
+  addBot(memberId: string): void {
+    const author = this.#member(memberId);
 
-    if (bot && this.members.length < gameLimits.maxPlayers) this.join(bot);
+    if (!author || this.phase !== 'lobby' || this.#isFull) return;
+
+    const bot = newBot(this.members, this.#deps.createId);
+
+    this.members.push(bot);
+    this.#feed.system(author, { type: 'botAdded', name: bot.name });
+    this.#emit();
   }
 
-  removeBot(): void {
-    const bot = this.members.findLast((member) => member.isBot);
+  removeBot(memberId: string, botId: string): void {
+    const author = this.#member(memberId);
+    const bot = this.#member(botId);
 
-    if (bot) this.leave(bot.id);
+    if (!author || !bot?.bot || this.phase !== 'lobby') return;
+
+    this.members = this.members.filter((other) => other !== bot);
+    this.#feed.system(author, { type: 'botRemoved', name: bot.name });
+    this.#emit();
+  }
+
+  // Demo buttons: a sample player sits down or gets up.
+  addSample(): void {
+    const sample = nextSample(this.members, this.#deps.createId);
+
+    if (sample && (!this.#isFull || this.members.some((member) => member.bot))) this.join(sample);
+  }
+
+  removeSample(): void {
+    const sample = this.members.findLast((member) => member.sample);
+
+    if (sample) this.leave(sample.id);
   }
 
   dispose(): void {
     this.#bots.cancel();
+  }
+
+  // Someone is sitting down at a full table: the newest bot gets up for them.
+  #makeRoom(): void {
+    const bot = this.members.findLast((member) => member.bot);
+
+    if (this.#isFull && bot) this.leave(bot.id);
   }
 
   #member(id: string): DemoMember | undefined {

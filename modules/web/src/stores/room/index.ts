@@ -10,6 +10,7 @@ import { RoomFeedStore } from './feed';
 import { RoomGameStore } from './game';
 import { RoomPresenceStore } from './presence';
 import { RoomReactionsStore } from './reactions';
+import { RoomSeatsStore } from './seats';
 import { RoomShareStore } from './share';
 import type { TableSend } from './types';
 
@@ -41,6 +42,7 @@ export class RoomStore {
   readonly connection: RoomConnectionStore;
   readonly presence: RoomPresenceStore;
   readonly game: RoomGameStore;
+  readonly seats: RoomSeatsStore;
   readonly feed: RoomFeedStore;
   readonly chatPace: RoomChatPaceStore;
   readonly reactions: RoomReactionsStore;
@@ -58,6 +60,7 @@ export class RoomStore {
     this.connection = createConnection(this, services, t);
     this.presence = new RoomPresenceStore({ t });
     this.game = new RoomGameStore({ t, send });
+    this.seats = new RoomSeatsStore({ t, presence: this.presence, send, isLobby: () => this.game.state === 'lobby' });
     this.chatPace = new RoomChatPaceStore({ t, now: services.now, schedule: services.schedule });
 
     this.feed = new RoomFeedStore({

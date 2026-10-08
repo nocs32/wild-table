@@ -15,6 +15,10 @@ export const tableErrorCodes = [
   'EMPTY_NAME',
   // The game isn't in the phase this needs (settings outside the lobby…).
   'WRONG_PHASE',
+  // Every seat is taken, so no bot can sit down.
+  'TABLE_FULL',
+  // Only bots can be sent away from the table.
+  'NOT_A_BOT',
 ] as const;
 
 export type TableErrorCode = (typeof tableErrorCodes)[number];

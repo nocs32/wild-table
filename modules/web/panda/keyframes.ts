@@ -35,6 +35,11 @@ export const keyframes = defineKeyframes({
     from: { transform: 'translateY(28px) rotate(-1.5deg)', opacity: '0' },
     to: { transform: 'translateY(0) rotate(0)', opacity: '1' },
   },
+  // The settings card slides in from the right edge.
+  slideIn: {
+    from: { transform: 'translateX(40px)', opacity: '0' },
+    to: { transform: 'translateX(0)', opacity: '1' },
+  },
   fadeIn: {
     from: { opacity: '0' },
     to: { opacity: '1' },
@@ -42,5 +47,65 @@ export const keyframes = defineKeyframes({
   dialogIn: {
     from: { opacity: '0', transform: 'translateY(8px) scale(0.98)' },
     to: { opacity: '1', transform: 'translateY(0) scale(1)' },
+  },
+  // The rule leaflet unfolds onto the table.
+  leafletIn: {
+    from: { opacity: '0', transform: 'translateY(24px) rotate(-2deg) scale(0.96)' },
+    to: { opacity: '1', transform: 'translateY(0) rotate(0) scale(1)' },
+  },
+  // A ✅ or ❌ stamped next to a card.
+  stamp: {
+    '0%': { opacity: '0', transform: 'scale(1.8) rotate(-12deg)' },
+    '60%': { opacity: '1', transform: 'scale(0.92) rotate(3deg)' },
+    '100%': { opacity: '1', transform: 'scale(1) rotate(0)' },
+  },
+  // A card that can't be played shakes its head (spec §8.2).
+  shake: {
+    '0%, 100%': { transform: 'translateX(0)' },
+    '20%': { transform: 'translateX(-6px) rotate(-3deg)' },
+    '40%': { transform: 'translateX(5px) rotate(2deg)' },
+    '60%': { transform: 'translateX(-4px) rotate(-1deg)' },
+    '80%': { transform: 'translateX(2px)' },
+  },
+  // Start, ready to press: an arcade button's light.
+  glowPulse: {
+    '0%, 100%': { boxShadow: '0 5px 0 {colors.action.primaryEdge}, 0 0 0 0 rgba(255, 201, 99, 0)' },
+    '50%': { boxShadow: '0 5px 0 {colors.action.primaryEdge}, 0 0 28px 6px rgba(255, 201, 99, 0.45)' },
+  },
+  // The "NEW!" starburst turning slowly.
+  spinSlow: {
+    from: { transform: 'rotate(0deg)' },
+    to: { transform: 'rotate(360deg)' },
+  },
+  // How to play a card (rule book, page 8): a card from the hand to the pile, four ways.
+  howDrag: {
+    '0%, 12%': { transform: 'translate(0, 0) rotate(-6deg)' },
+    '22%': { transform: 'translate(0, -14px) rotate(-6deg) scale(1.08)' },
+    '55%': { transform: 'translate(var(--to-x), var(--to-y)) rotate(8deg) scale(1.08)' },
+    '62%, 88%': { transform: 'translate(var(--to-x), var(--to-y)) rotate(3deg) scale(1)' },
+    '100%': { transform: 'translate(0, 0) rotate(-6deg)', opacity: '0' },
+  },
+  howThrow: {
+    '0%, 18%': { transform: 'translate(0, 0) rotate(-6deg)' },
+    '28%': { transform: 'translate(-6px, 10px) rotate(-10deg) scale(1.06)' },
+    '42%': { transform: 'translate(var(--to-x), var(--to-y)) rotate(22deg) scale(1.06)' },
+    '48%, 88%': { transform: 'translate(var(--to-x), var(--to-y)) rotate(-4deg) scale(1)' },
+    '100%': { transform: 'translate(0, 0) rotate(-6deg)', opacity: '0' },
+  },
+  howClick: {
+    '0%, 15%': { transform: 'translate(0, 0) rotate(-6deg)' },
+    '22%, 45%': { transform: 'translate(0, -22px) rotate(0deg) scale(1.15)' },
+    '62%, 88%': { transform: 'translate(var(--to-x), var(--to-y)) rotate(3deg) scale(1)' },
+    '100%': { transform: 'translate(0, 0) rotate(-6deg)', opacity: '0' },
+  },
+  howDraw: {
+    '0%, 20%': { transform: 'translate(0, 0)', opacity: '1' },
+    '55%, 88%': { transform: 'translate(var(--to-x), var(--to-y)) rotate(-6deg)', opacity: '1' },
+    '100%': { transform: 'translate(var(--to-x), var(--to-y)) rotate(-6deg)', opacity: '0' },
+  },
+  // The pointer in the how-to loops: a press, then a release.
+  howTap: {
+    '0%, 100%': { transform: 'scale(1)', opacity: '0.9' },
+    '50%': { transform: 'scale(0.82)', opacity: '1' },
   },
 });

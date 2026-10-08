@@ -1,43 +1,84 @@
 import { defineTokens } from '@pandacss/dev';
 
-// The siblings' palette (dark): Radix "sand" greys, with Wild Table's own accent, Radix "grass" (the
-// card table's felt), and the felt itself. The paper, desk and stationery colours are Telephone
-// Table's, kept for the chat, the dock and the lobby's cards until the rec room's style replaces
-// them (spec §8.1).
+// The 90s basement rec room (spec D21, §8.1). Two families of surfaces, used the same way everywhere:
+// - the room itself (the top bar, the dock, the chat, popovers): dark walnut, brass trim, and
+//   cream lettering under the lamp;
+// - the game's printed matter (the settings card, the rule leaflet, tent cards, the status card):
+//   glossy card stock with bold ink and the four card colours, straight out of a game box.
+// The neon colours are the jukebox and the pinball machine glowing in the dark: highlights only.
 export const tokens = defineTokens({
   fonts: {
-    body: { value: 'Lato, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif' },
+    body: { value: '"Rubik Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif' },
+    // Headings and buttons: the same family, set heavy, like the lettering on a 90s game box.
+    display: { value: '"Rubik Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif' },
     mono: { value: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace' },
     emoji: { value: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif' },
   },
   colors: {
-    sand: {
-      1: { value: '#111110' },
-      2: { value: '#191918' },
-      3: { value: '#222221' },
-      4: { value: '#2A2A28' },
-      5: { value: '#31312E' },
-      6: { value: '#3B3A37' },
-      7: { value: '#494844' },
-      8: { value: '#62605B' },
-      9: { value: '#6F6D66' },
-      10: { value: '#7C7B74' },
-      11: { value: '#B5B3AD' },
-      12: { value: '#EEEEEC' },
+    // The basement beyond the lamp's light, from darkest to the haze around the table.
+    room: {
+      night: { value: '#0E0A08' },
+      dusk: { value: '#16100C' },
+      shade: { value: '#1F1712' },
+      smoke: { value: '#2A2019' },
+      haze: { value: '#3A2D23' },
     },
-    grass: {
-      1: { value: '#0E1511' },
-      2: { value: '#141A15' },
-      3: { value: '#1B2A1E' },
-      4: { value: '#1D3A24' },
-      5: { value: '#25482D' },
-      6: { value: '#2D5736' },
-      7: { value: '#366740' },
-      8: { value: '#3E7949' },
-      9: { value: '#46A758' },
-      10: { value: '#53B365' },
-      11: { value: '#71D083' },
-      12: { value: '#C2F0C2' },
+    // Walnut panelling and the table's wood.
+    wood: {
+      deep: { value: '#1E120A' },
+      dark: { value: '#33200F' },
+      base: { value: '#4E3018' },
+      light: { value: '#6F4626' },
+      grain: { value: '#8C5D35' },
+    },
+    // The card table's padded rail.
+    leather: {
+      dark: { value: '#1C110A' },
+      base: { value: '#2E1C11' },
+      light: { value: '#46301F' },
+    },
+    // Brass trim on the wood.
+    brass: {
+      deep: { value: '#6B5122' },
+      base: { value: '#B08A43' },
+      light: { value: '#DDBD78' },
+      shine: { value: '#F5E0A6' },
+    },
+    // Printed card stock and its ink.
+    print: {
+      paper: { value: '#F6ECD6' },
+      card: { value: '#FFF8E8' },
+      shade: { value: '#E8D9B8' },
+      line: { value: '#D3BF98' },
+      ink: { value: '#22170E' },
+      muted: { value: '#6F5C47' },
+      soft: { value: '#9A866C' },
+    },
+    // The hanging lamp's warm light.
+    lamp: {
+      glow: { value: '#FFC963' },
+      warm: { value: '#F3A53B' },
+      deep: { value: '#B9741C' },
+    },
+    // The cards' four colours (each also has its own symbol, D22), their darker edges, and the
+    // wilds' black.
+    suit: {
+      red: { value: '#E2412F' },
+      redDeep: { value: '#A8281A' },
+      yellow: { value: '#F5B62A' },
+      yellowDeep: { value: '#C2840E' },
+      green: { value: '#2F9E58' },
+      greenDeep: { value: '#1D6B3A' },
+      blue: { value: '#2B6AD6' },
+      blueDeep: { value: '#1B479C' },
+      wild: { value: '#1A1411' },
+    },
+    // The jukebox, the pinball machine and the neon sign glowing in the dark.
+    neon: {
+      pink: { value: '#FF4FA8' },
+      pinkDeep: { value: '#D92A82' },
+      cyan: { value: '#3FE3FF' },
+      violet: { value: '#A26BFF' },
     },
     // The card table's green felt: lit in the middle by the lamp, falling into shadow at the edge.
     felt: {
@@ -48,50 +89,6 @@ export const tokens = defineTokens({
     status: {
       red: { value: '#E5484D' },
       green: { value: '#30A46C' },
-    },
-    // Paper: warm white, ruled lines and ink.
-    notebook: {
-      paper: { value: '#FBF8F1' },
-      paperShade: { value: '#EFE9DC' },
-      ink: { value: '#26251F' },
-      muted: { value: '#7A756A' },
-      rule: { value: '#DCE3EC' },
-      margin: { value: '#F0B9B4' },
-      bubble: { value: '#FFFFFF' },
-      tape: { value: 'rgba(244, 222, 130, 0.78)' },
-      spiral: { value: '#A9A499' },
-      heart: { value: '#E5484D' },
-      heartTint: { value: '#FFE4E4' },
-      star: { value: '#F2B53A' },
-    },
-    // The art desk: muted oak, its dark edges, and light writing on it.
-    desk: {
-      wood: { value: '#6B5B4C' },
-      // The desk seen through a punched hole, in shadow.
-      hole: { value: '#3A3027' },
-      edge: { value: '#0E0E0D' },
-      chalk: { value: '#EEF2E4' },
-      chalkMuted: { value: 'rgba(238, 242, 228, 0.62)' },
-    },
-    // Things lying on the desk.
-    stationery: {
-      sticky: { value: '#FFE37A' },
-      stickyEdge: { value: '#F2CF4F' },
-      stickyPink: { value: '#FFBCCB' },
-      stickyBlue: { value: '#BDE3F8' },
-      stickyGreen: { value: '#CDEDB0' },
-      card: { value: '#FFFDF6' },
-      cardRule: { value: '#CADCEB' },
-      cardTop: { value: '#E8A3A0' },
-      stamp: { value: '#D93B3B' },
-      stampBlue: { value: '#3F5FD9' },
-      stampGreen: { value: '#2E9A5B' },
-      kraft: { value: '#C7A27A' },
-      kraftDeep: { value: '#A9845E' },
-      backing: { value: '#E9E6DE' },
-      clip: { value: '#2B2B2A' },
-      tapeBlue: { value: 'rgba(140, 196, 236, 0.82)' },
-      tapePink: { value: 'rgba(246, 168, 196, 0.82)' },
     },
     player: {
       raspberry: { value: '#E01E5A' },
