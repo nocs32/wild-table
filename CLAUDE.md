@@ -10,7 +10,7 @@ It's the fourth sibling of Felt Table (`../felt-table-jigsaw`), Scribble Table (
 Setup commit first (M0), then each phase gets its own branch and PR, as in the siblings (spec D17, §12):
 1. **Web UI** (`feat/web-ui`), on local MobX stores against the demo table. **It starts with a feel check** of the 3D hand (hover, drag, throw, click, the slap) against the simplest bot, on a laptop and a real phone, reviewed together before the rest is built. Then we review it all together, then PR and merge.
 2. **Backend, and connecting the UI to it** (`feat/live-tables`). We review and check it together, then PR and merge.
-3. **CI** (`feat/ci`). PR and merge.
+3. **CI** (`feat/ci`). PR and merge. The workflow (`.github/workflows/ci.yml`) came with the setup commit and has checked every PR since; the badge is in the README.
 4. **Hosting** (`feat/hosting`): `pnpm play` and the `wild-table` Cloudflare Tunnel on wild.timnox.dev.
 
 **Every feature explains itself on screen** (spec D7, D27): cards you can play glow, a card that can't be played says why, the first time each special card is played a caption says what it did, and the rule book is one click away. Anything else people wouldn't guess (drag vs click, the Last card! bell, the +4 challenge, house-rule tent cards, emotes from your portrait, the props to poke) gets a short line or hint right where it's used. Check it in every UI review.
