@@ -73,3 +73,18 @@ test('bots jump in out of turn with the exact card on top, and only then', () =>
   expect(botJumpInDelay(seatView(state, 'b'), legalMoves(state, 'b'), always)).toBeNull();
   expect(botJumpInDelay(seatView(state, 'a'), legalMoves(state, 'a'), always)).toBeNull();
 });
+
+test('the early bell counts once a turn, and the call ends with the turn', () => {
+  const start = makeRound({ hands: { a: ['r2', 'b1'], b: ['y1', 'y2', 'y3'] }, top: 'r7', deck: ['g4', 'g5'] });
+  const called = after(move(start, 'a', { type: 'bell' }));
+
+  expect(roundSnapshot(called, 0).earlyCall).toBe('a');
+  expect(move(called, 'a', { type: 'bell' })).toEqual({ ok: false, error: 'NO_RACE' });
+  expect(legalMoves(called, 'a').some((one) => one.type === 'bell')).toBe(false);
+
+  // a draws instead of playing, and the turn moves on: the call is gone.
+  const drawn = after(move(called, 'a', { type: 'draw' }));
+  const passed = drawn.step.kind === 'drawn' ? after(move(drawn, 'a', { type: 'keep' })) : drawn;
+
+  expect([passed.turn, passed.earlyCall]).toEqual(['b', null]);
+});

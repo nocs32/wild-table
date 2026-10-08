@@ -2,6 +2,7 @@
 // the moves it has. Bots get exactly this, so they can't cheat; the cards that glow in a hand come
 // from the same list (spec D7).
 import { cardColours, type Card, type CardColour, type HouseRules } from '@wild-table/protocol';
+import { canCallEarly } from './bell.js';
 import { playError } from './play.js';
 import { handOf, topCard } from './table.js';
 import type { Move, RoundState, SeatId, TurnStep } from './types.js';
@@ -42,8 +43,7 @@ export const seatView = (state: RoundState, seat: SeatId): SeatView => ({
   rules: state.rules,
 });
 
-const canRing = (state: RoundState, seat: SeatId): boolean =>
-  state.race !== null || (seat === state.turn && state.step.kind === 'play' && handOf(state, seat).length === 2);
+const canRing = (state: RoundState, seat: SeatId): boolean => state.race !== null || canCallEarly(state, seat);
 
 const canChallenge = (state: RoundState): boolean => state.wild4 !== null && !state.rules.wild4AnyTime && topCard(state).kind === 'wild4';
 
