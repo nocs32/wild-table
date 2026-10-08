@@ -1,7 +1,7 @@
 import { Popover } from '@ark-ui/react/popover';
 import { Portal } from '@ark-ui/react/portal';
 import type { ReactElement } from 'react';
-import { Button, ConfirmPopoverButtons, ConfirmPopoverContent, ConfirmPopoverNote, ConfirmPopoverText, ConfirmPopoverTitle } from './styled-components';
+import { Button, ConfirmPopoverButtons, ConfirmPopoverNote, ConfirmPopoverText, ConfirmPopoverTitle, PanelContent } from './styled-components';
 
 interface ConfirmPopoverProps {
   title: string;
@@ -21,7 +21,7 @@ export function ConfirmPopover({ title, note, cancelLabel, confirmLabel, onConfi
       <Popover.Trigger asChild>{children}</Popover.Trigger>
       <Portal>
         <Popover.Positioner>
-          <ConfirmPopoverContent>
+          <PanelContent>
             <ConfirmPopoverText>
               <Popover.Title asChild>
                 <ConfirmPopoverTitle>{title}</ConfirmPopoverTitle>
@@ -44,7 +44,7 @@ export function ConfirmPopover({ title, note, cancelLabel, confirmLabel, onConfi
                 </Button>
               </Popover.CloseTrigger>
             </ConfirmPopoverButtons>
-          </ConfirmPopoverContent>
+          </PanelContent>
         </Popover.Positioner>
       </Portal>
     </Popover.Root>

@@ -1,5 +1,6 @@
 import { soundUrls } from '../assets';
 import { createAddress } from './address';
+import { createCardArt } from './card-art';
 import { createDemoTable } from './demo-table';
 import { createLiveTable } from './live-table';
 import { createPreferences } from './preferences';
@@ -9,8 +10,10 @@ import type { Schedule, Services } from './types';
 
 export type {
   AddressService,
+  CardArtService,
   ClipboardService,
   DemoControls,
+  DeviceService,
   PreferencesService,
   Schedule,
   Services,
@@ -50,6 +53,9 @@ export const createServices = (): Services => ({
   // referee and sample players in the browser, with no server (spec D18).
   tableClient: isDemo ? createDemoTable({ schedule, random: Math.random, now: Date.now, createId }) : createLiveTable(window.location.origin, Date.now),
   sounds: new Sounds(window, soundUrls),
+  // Drawn at 1.6 times the 250 × 350 design: sharp on a phone's screen and on the 3D table.
+  cardArt: createCardArt(1.6),
+  device: { isTouch: () => window.matchMedia('(pointer: coarse)').matches },
   schedule,
   repeat,
   random: Math.random,

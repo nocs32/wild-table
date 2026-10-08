@@ -1,12 +1,11 @@
-import '@fontsource/lato/400.css';
-import '@fontsource/lato/700.css';
-import '@fontsource/lato/900.css';
+import '@fontsource-variable/rubik';
 import './index.css';
 import './stores/configure-mobx';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './app';
 import { syncDocumentLanguage } from './services/document-language';
+import { watchLayout } from './services/layout';
 import { createRootStore } from './stores';
 
 const rootElement = document.getElementById('root');
@@ -23,6 +22,8 @@ if (import.meta.env.DEV) {
 }
 
 syncDocumentLanguage(store.locale);
+watchLayout(store.ui.layout);
+store.art.load();
 store.room.open();
 
 createRoot(rootElement).render(

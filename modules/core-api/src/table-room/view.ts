@@ -11,6 +11,6 @@ export interface TableRoomView {
 }
 
 export const tableView = (members: readonly TableRoomMember[], game: TableRoomGame): TableRoomView => ({
-  members: members.map(({ id, name, color, connected }) => ({ id, name, color, connected })),
+  members: members.map(({ id, name, color, connected, bot }) => ({ id, name, color, connected, bot })),
   game: { phase: game.phase, settings: game.settings },
 });

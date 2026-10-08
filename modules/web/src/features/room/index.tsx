@@ -5,33 +5,44 @@ import { RoomChat } from './chat';
 import { RoomDock } from './dock';
 import { RoomFlights } from './flights';
 import { RoomLobby } from './lobby';
+import { RoomRotate } from './rotate';
+import { RoomRuleBook } from './rule-book';
 import { RoomStatus } from './status';
-import { RoomMain, RoomRoot, RoomScroll } from './styled-components';
+import { RoomMain, RoomRoot } from './styled-components';
+import { RoomTable } from './table';
 import { RoomTopBar } from './top-bar';
 import { useRoomArea } from './use-area';
 
-// The whole page: the top bar, the table (with the floating chat and flying emoji over it), and the
-// dock along the bottom. Until the table is open, a status card stands in. For now the table holds
-// only the lobby; the 3D table comes with the game.
+// The whole page: the top bar, the card table (with the lobby, the floating chat and flying emoji
+// over it), and the dock along the bottom. The rule book opens over everything. Until the table is
+// open, a status card stands in.
 export const Room = observer(function Room(): ReactElement {
   const { room, ui } = useRootStore();
   const areaRef = useRoomArea(ui.widgets.area);
+  const { isCompact } = ui.layout;
 
   if (!room.isOpen) {
-    return <RoomStatus />;
+    return (
+      <>
+        <RoomStatus />
+        <RoomRotate />
+      </>
+    );
   }
 
   return (
     <RoomRoot>
       <RoomTopBar />
       <RoomMain ref={areaRef}>
-        <RoomScroll>
-          <RoomLobby />
-        </RoomScroll>
+        <RoomTable />
+        <RoomLobby />
+        {isCompact && <RoomDock />}
         {ui.widgets.showsChat && <RoomChat />}
         <RoomFlights />
       </RoomMain>
-      <RoomDock />
+      {!isCompact && <RoomDock />}
+      <RoomRuleBook />
+      <RoomRotate />
     </RoomRoot>
   );
 });

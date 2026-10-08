@@ -15,6 +15,7 @@ import { customAlphabet } from 'nanoid';
 import * as v from 'valibot';
 import { limits } from '../limits.js';
 import { logger } from '../logger.js';
+import { TableRoomBots } from './bots.js';
 import { TableRoomError } from './error.js';
 import { TableRoomFeed } from './feed.js';
 import { TableRoomGame } from './game.js';
@@ -53,9 +54,9 @@ const readJoinOptions = (options: unknown): TableJoinOptions => {
   return result.output;
 };
 
-// One shared table. Its parts own the rules: who is here, the game, the feed, what each person is
-// sent, rate limits, and when the empty table is thrown away. This class only wires them to
-// Colyseus.
+// One shared table. Its parts own the rules: who is here, the game, the bots, the feed, what each
+// person is sent, rate limits, and when the empty table is thrown away. This class only wires them
+// to Colyseus.
 export class TableRoom extends Room<{ client: TableClient }> {
   override maxClients = table.maxClients;
   // The lifecycle decides when an empty table goes, not Colyseus.
@@ -71,6 +72,7 @@ export class TableRoom extends Room<{ client: TableClient }> {
   readonly #feed = new TableRoomFeed({ now: Date.now, createId: randomUUID, maxItems: feedMaxItems });
   readonly #rateLimits = new TableRoomRateLimits(table.rates, Date.now);
   readonly #game = new TableRoomGame({ members: this.#members, feed: this.#feed });
+  readonly #bots = new TableRoomBots({ members: this.#members, feed: this.#feed, game: this.#game, createId: randomUUID });
 
   readonly #outbox = new TableRoomOutbox({
     feed: this.#feed,
@@ -91,12 +93,15 @@ export class TableRoom extends Room<{ client: TableClient }> {
 
   override onJoin(client: TableClient, options: unknown): void {
     const { name } = readJoinOptions(options);
+
+    this.#bots.makeRoom();
+
     const member = this.#members.join(client.sessionId, name);
 
     this.#lifecycle.join();
     this.#feed.system(member, { type: 'joined' });
     this.#outbox.flush();
-    logger.info('table joined', { roomId: this.roomId, sessionId: client.sessionId, people: this.#members.count });
+    logger.info('table joined', { roomId: this.roomId, sessionId: client.sessionId, people: this.#members.people, seats: this.#members.count });
   }
 
   // A lost connection keeps its seat for a while; the browser reconnects on its own and asks
@@ -121,9 +126,9 @@ export class TableRoom extends Room<{ client: TableClient }> {
     this.#rateLimits.forget(client.sessionId);
     this.#outbox.forget(client.sessionId);
     this.#feed.system(member, { type: 'left' });
-    this.#lifecycle.leave(this.#members.count);
+    this.#lifecycle.leave(this.#members.people);
     this.#outbox.flush();
-    logger.info('table left', { roomId: this.roomId, sessionId: client.sessionId, people: this.#members.count });
+    logger.info('table left', { roomId: this.roomId, sessionId: client.sessionId, people: this.#members.people, seats: this.#members.count });
   }
 
   override onDispose(): void {
@@ -139,6 +144,8 @@ export class TableRoom extends Room<{ client: TableClient }> {
     this.#on('chat', (client, { text }) => this.#feed.message(this.#members.get(client.sessionId), text));
     this.#on('react', (client, { emoji }) => this.broadcast('reaction', { memberId: client.sessionId, emoji }, { except: client }));
     this.#on('rename', (client, { name }) => this.#rename(client, name));
+    this.#on('addBot', (client) => this.#bots.add(client.sessionId));
+    this.#on('removeBot', (client, { memberId }) => this.#bots.remove(client.sessionId, memberId));
   }
 
   // Every handler: validate the message, check the sender's rate, then call the part that owns it,

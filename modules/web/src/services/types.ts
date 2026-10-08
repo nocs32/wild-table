@@ -1,4 +1,4 @@
-import type { TableErrorEvent, TableIntents, TableIntentType, TableReactionEvent, TableSnapshot } from '@wild-table/protocol';
+import type { CardFace, TableErrorEvent, TableIntents, TableIntentType, TableReactionEvent, TableSnapshot } from '@wild-table/protocol';
 import type { Language, TranslationKey, TranslationValues } from '../i18n';
 import type { WidgetPreference } from '../stores/ui/widgets/types';
 
@@ -27,6 +27,24 @@ export interface SoundsService {
   chime: () => void;
   // 0 is silent, 1 is full volume.
   setLevel: (level: number) => void;
+}
+
+// The cards, drawn by code (spec §8.4).
+export interface CardArtService {
+  // Waits for the typeface the cards are lettered in. Nothing is drawn before it's done.
+  load: () => Promise<void>;
+  // An image URL for the HTML, drawn the first time it's asked for.
+  faceUrl: (face: CardFace) => string;
+  backUrl: () => string;
+  // A canvas, for the 3D table's textures.
+  faceCanvas: (face: CardFace) => HTMLCanvasElement;
+  backCanvas: () => HTMLCanvasElement;
+}
+
+// What kind of pointer this device has: a mouse, or a finger (the rule book shows the touch
+// versions of how to play a card).
+export interface DeviceService {
+  isTouch: () => boolean;
 }
 
 export interface TranslatorService {
@@ -98,6 +116,8 @@ export interface Services {
   address: AddressService;
   tableClient: TableClientService;
   sounds: SoundsService;
+  cardArt: CardArtService;
+  device: DeviceService;
   schedule: Schedule;
   repeat: Schedule;
   random: () => number;

@@ -9,7 +9,8 @@ export interface DemoBotsHost {
 // What sample players type in the chat: their own words, not UI text, so it isn't translated.
 const greetings = { en: ['hey all 👋', 'hi! ready when you are'], uk: ['привіт усім 👋', 'всім привіт!'] };
 
-// Sample players: for now they sit down and say hello. They play cards once there's a game.
+// Sample players: for now they sit down and say hello. They play cards once there's a game, as the
+// bots do (spec §6.1).
 export class DemoBots {
   readonly #deps: DemoDeps;
   readonly #host: DemoBotsHost;

@@ -105,6 +105,21 @@ test('chat goes to everyone; a reaction goes to everyone else', async () => {
   expect(all(bo, 'reaction')).toEqual([]);
 });
 
+test('bots sit down from the lobby, and a newcomer at a full table takes the newest bot’s seat', async () => {
+  const [ana] = (await sitDown(1)) as [Seat];
+
+  [1, 2, 3, 4, 5].forEach(() => ana.room.send('addBot', {}));
+  await until(() => latest(ana, 'view')?.members.length === 6);
+  expect(latest(ana, 'view')?.members.filter((member) => member.bot).map((member) => member.name)).toEqual(['Ace', 'Chip', 'Dice', 'Domino', 'Jinx']);
+
+  ana.room.send('addBot', {});
+  await until(() => latest(ana, 'error')?.code === 'TABLE_FULL');
+
+  const bo = listen(await colyseus.sdk.joinById(ana.room.roomId, joinOptions('Bo')));
+
+  await until(() => latest(bo, 'view')?.members.map((member) => member.name).join() === 'Player 0,Ace,Chip,Dice,Domino,Bo');
+});
+
 test('a refused message comes back as an error, and the sender stays', async () => {
   const [ana] = (await sitDown(1)) as [Seat];
 

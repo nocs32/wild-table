@@ -20,10 +20,10 @@ import {
 // Slack's emoji picker: search on top, every emoji below. Picks fly up and join the quick bar;
 // the picker stays open so you can keep sending.
 export const RoomDockPicker = observer(function RoomDockPicker(): ReactElement {
-  const { locale, room } = useRootStore();
+  const { locale, room, ui } = useRootStore();
 
   return (
-    <Popover.Root positioning={{ placement: 'top', gutter: 12 }} lazyMount>
+    <Popover.Root positioning={{ placement: ui.layout.isCompact ? 'right-end' : 'top', gutter: 12 }} lazyMount>
       <Popover.Trigger asChild>
         <RoomDockButton type="button" aria-label={locale.t('reactions.more')} title={locale.t('reactions.more')}>
           <AddReactionIcon />

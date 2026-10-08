@@ -3,35 +3,42 @@ import { styled } from 'styled-system/jsx';
 export const RoomRoot = styled('div', {
   base: {
     display: 'grid',
-    gridTemplateRows: '48px minmax(0, 1fr) auto',
+    gridTemplateRows: '52px minmax(0, 1fr) auto',
     height: '100dvh',
+    // A phone held sideways: every pixel of height counts.
+    '@media (max-height: 540px)': { gridTemplateRows: '44px minmax(0, 1fr) auto' },
+    '&:has([data-rail])': { gridTemplateRows: '52px minmax(0, 1fr)', '@media (max-height: 540px)': { gridTemplateRows: '44px minmax(0, 1fr)' } },
     bg: 'chrome.app',
     color: 'fg.default',
   },
 });
 
-// The table, with the chat and flying emoji floating over it. Measured, so the chat stays inside.
+// The basement around the card table: the table is drawn into it, and the lobby, the chat and the
+// flying emoji float over it. Measured, so the chat stays inside.
 export const RoomMain = styled('main', {
-  base: { position: 'relative', minHeight: '0', overflow: 'hidden', bg: 'felt.edge' },
-});
-
-// A plain green felt in a pool of lamplight, standing in for the 3D table (spec §8.1).
-export const RoomScroll = styled('div', {
   base: {
-    height: '100%',
-    overflowY: 'auto',
-    overscrollBehavior: 'contain',
-    bg: 'felt.edge',
-    bgImage: 'radial-gradient(ellipse 70% 80% at 50% 38%, {colors.felt.light}, {colors.felt.base} 55%, {colors.felt.edge})',
-    bgAttachment: 'local',
+    position: 'relative',
+    minHeight: '0',
+    overflow: 'hidden',
+    bg: 'room.night',
+    bgImage: 'radial-gradient(ellipse 46% 52% at 50% 56%, rgba(255, 201, 99, 0.16), transparent 70%), radial-gradient(ellipse 80% 70% at 50% 60%, {colors.room.dusk}, {colors.room.night})',
   },
 });
 
 // Instead of the table, while it opens or when there's none to show.
 export const RoomStatusRoot = styled('main', {
-  base: { display: 'grid', placeItems: 'center', minHeight: '100dvh', padding: '24px', bg: 'chrome.app', color: 'fg.default' },
+  base: {
+    display: 'grid',
+    placeItems: 'center',
+    minHeight: '100dvh',
+    padding: '24px',
+    bg: 'room.night',
+    bgImage: 'radial-gradient(ellipse 60% 50% at 50% 45%, rgba(255, 201, 99, 0.14), transparent 70%)',
+    color: 'fg.default',
+  },
 });
 
+// A printed card in the lamplight, like the lobby's.
 export const RoomStatusCard = styled('section', {
   base: {
     display: 'grid',
@@ -40,12 +47,13 @@ export const RoomStatusCard = styled('section', {
     width: '100%',
     maxWidth: '400px',
     padding: '28px',
-    borderRadius: '4px',
-    bg: 'stationery.card',
-    color: 'notebook.ink',
-    boxShadow: 'note',
+    borderRadius: '18px',
+    border: '2px solid',
+    borderColor: 'print.ink',
+    bg: 'print.card',
+    color: 'print.ink',
+    boxShadow: 'print',
     textAlign: 'center',
-    transform: 'rotate(-0.8deg)',
     animation: 'dialogIn 0.25s ease-out',
   },
 });
@@ -55,17 +63,17 @@ export const RoomStatusLogo = styled('span', {
 });
 
 export const RoomStatusTitle = styled('h1', {
-  base: { fontSize: '20px', fontWeight: '900', letterSpacing: '-0.01em' },
+  base: { fontFamily: 'display', fontSize: '21px', fontWeight: '800' },
 });
 
 export const RoomStatusText = styled('p', {
-  base: { marginBottom: '8px', fontSize: '15px', color: 'notebook.muted', textWrap: 'balance' },
+  base: { marginBottom: '8px', fontSize: '15px', color: 'print.muted', textWrap: 'balance' },
 });
 
 export const RoomStatusSpinner = styled('span', {
   base: {
     display: 'inline-flex',
-    color: 'accent.default',
+    color: 'suit.redDeep',
     '& svg': { width: '22px', height: '22px', animation: 'spin' },
     _motionReduce: { '& svg': { animation: 'none' } },
   },
@@ -119,5 +127,34 @@ export const RoomFlightsSway = styled('div', {
 });
 
 export const RoomFlightsName = styled('span', {
-  base: { marginTop: '4px', paddingInline: '6px', borderRadius: '4px', bg: 'sand.1', color: 'fg.default', fontFamily: 'body', fontSize: '11px', fontWeight: '700' },
+  base: { marginTop: '4px', paddingInline: '6px', borderRadius: '4px', bg: 'room.night', color: 'fg.default', fontFamily: 'body', fontSize: '11px', fontWeight: '700' },
+});
+
+// A phone held upright: the game asks to be turned sideways (spec D20, §9.2). Only CSS decides
+// when it shows.
+export const RoomRotateRoot = styled('div', {
+  base: {
+    position: 'fixed',
+    inset: '0',
+    zIndex: '100',
+    display: 'none',
+    placeItems: 'center',
+    padding: '28px',
+    bg: 'room.night',
+    bgImage: 'radial-gradient(ellipse 70% 50% at 50% 45%, rgba(255, 201, 99, 0.16), transparent 70%)',
+    textAlign: 'center',
+    '@media (orientation: portrait) and (pointer: coarse) and (max-width: 600px)': { display: 'grid' },
+  },
+});
+
+export const RoomRotateCard = styled('div', {
+  base: { display: 'grid', justifyItems: 'center', gap: '12px', maxWidth: '320px', '& svg': { width: '64px', height: '64px', color: 'lamp.glow' } },
+});
+
+export const RoomRotateTitle = styled('h1', {
+  base: { fontFamily: 'display', fontSize: '22px', fontWeight: '800', color: 'print.card' },
+});
+
+export const RoomRotateText = styled('p', {
+  base: { fontSize: '15px', color: 'fg.muted', textWrap: 'balance' },
 });

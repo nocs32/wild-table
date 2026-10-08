@@ -1,4 +1,4 @@
-import type { TableEvents } from '@wild-table/protocol';
+import { defaultGameSettings, type TableEvents } from '@wild-table/protocol';
 import { expect, test } from 'vitest';
 import { TableRoomFeed } from './feed.js';
 import { TableRoomOutbox } from './outbox.js';
@@ -26,7 +26,7 @@ const createOutbox = (): Harness => {
 
   const outbox = new TableRoomOutbox({
     feed,
-    view: () => ({ members: [], game: { phase: 'lobby', settings: { targetScore: 300, turnSeconds: state.turnSeconds } } }) satisfies TableRoomView,
+    view: () => ({ members: [], game: { phase: 'lobby', settings: { ...defaultGameSettings, turnSeconds: state.turnSeconds } } }) satisfies TableRoomView,
     now: () => 0,
     send: (to, type) => sent.push({ to, type }),
     broadcast: (type) => sent.push({ to: '*', type }),

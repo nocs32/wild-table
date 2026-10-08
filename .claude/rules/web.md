@@ -28,6 +28,10 @@ A child component's name starts with its parent's full name:
   - Folders that only group things (`features/`, `ui/`, `assets/`) get an `index.ts` that re-exports them.
   - The app entry is `src/index.tsx`.
 
+## 0a. Art drawn by code lives in `src/art`
+- Card faces, the back and the table's textures are drawn on canvases by plain functions in `src/art` (spec §8.4). Their colours and typeface come from the Panda tokens (`art/palette.ts`), never raw hex.
+- Stores reach the card art through `CardArtService`; the 3D layer turns canvases into textures in custom hooks (`features/room/table/use-textures.ts`).
+
 ## 1a. Icons are `.svg` files, not components
 - Icons live in `src/assets/icons/*.svg`. They're Lucide icons (ISC licence, see `lucide-license.txt`) written as plain SVG with `width/height="1em"` and `stroke="currentColor"`.
 - `src/assets/icons/index.ts` imports each one through `vite-plugin-svgr`: `export { default as MenuIcon } from './menu.svg?react';`.

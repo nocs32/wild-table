@@ -25,7 +25,7 @@ test('a dropped member keeps their seat until they leave', () => {
 
   members.join('a', 'Ana');
   members.drop('a');
-  expect(members.all).toEqual([{ id: 'a', name: 'Ana', color: expect.any(String), connected: false }]);
+  expect(members.all).toEqual([{ id: 'a', name: 'Ana', color: expect.any(String), connected: false, bot: false }]);
   expect(members.isConnected('a')).toBe(false);
   members.reconnect('a');
   expect(members.isConnected('a')).toBe(true);

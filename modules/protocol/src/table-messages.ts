@@ -3,7 +3,7 @@ import { personNameMaxLength } from './players.js';
 
 // Bumped whenever an intent or an event changes shape. A web app on another version is turned
 // away with PROTOCOL_MISMATCH and asked to reload.
-export const tableProtocolVersion = 1;
+export const tableProtocolVersion = 2;
 
 // The Colyseus room type the web app creates and joins.
 export const tableRoomName = 'table';
@@ -30,8 +30,21 @@ const settingsPatch = v.partial(
   v.strictObject({
     targetScore: integer(0, 10_000),
     turnSeconds: integer(0, 1000),
+    handSize: integer(0, 100),
+    houseRules: v.partial(
+      v.strictObject({
+        stacking: v.boolean(),
+        jumpIn: v.boolean(),
+        sevenZero: v.boolean(),
+        drawUntilPlayable: v.boolean(),
+        wild4AnyTime: v.boolean(),
+      }),
+    ),
   }),
 );
+
+// Member ids are session ids (people) or bot ids, both short.
+const memberId = v.pipe(v.string(), v.maxLength(64));
 
 const empty = v.strictObject({});
 
@@ -52,6 +65,9 @@ export const tableIntentSchemas = {
   chat: v.strictObject({ text: v.pipe(v.string(), v.maxLength(chatMaxLength)) }),
   react: v.strictObject({ emoji: v.pipe(v.string(), v.maxLength(emojiMaxLength), v.check(isEmoji)) }),
   rename: v.strictObject({ name: v.pipe(v.string(), v.maxLength(personNameMaxLength * 2)) }),
+  // Anyone in the lobby may sit a bot in a free seat, or send one away (spec §4.2).
+  addBot: empty,
+  removeBot: v.strictObject({ memberId }),
 };
 
 export type TableIntentType = keyof typeof tableIntentSchemas;

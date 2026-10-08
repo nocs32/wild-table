@@ -37,6 +37,11 @@ const describe = (event: FeedEvent, t: Translate): string => {
       return t('feed.renamed', { name: event.name });
     case 'setting':
       return t(`feed.setting.${event.setting}`, { value: event.value });
+    case 'houseRule':
+      return t(event.on ? 'feed.houseRuleOn' : 'feed.houseRuleOff', { rule: t(`houseRules.${event.rule}.name`) });
+    case 'botAdded':
+    case 'botRemoved':
+      return t(`feed.${event.type}`, { name: event.name });
     default:
       return t(`feed.${event.type}`);
   }

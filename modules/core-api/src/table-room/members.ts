@@ -1,17 +1,19 @@
+import { pickBotName } from '@wild-table/engine';
 import { cleanPersonName, playerColors, type PlayerColor } from '@wild-table/protocol';
 import { TableRoomError } from './error.js';
 import { pickMemberName } from './member-names.js';
 
-// Someone at the table, keyed by their session id.
+// Someone at the table: a person, keyed by their session id, or a bot sat down from the lobby.
 export interface TableRoomMember {
   readonly id: string;
   name: string;
   readonly color: PlayerColor;
   connected: boolean;
+  readonly bot: boolean;
 }
 
-// Who is at the table, in the order they joined. Each member is connected ⇄ reconnecting (a
-// dropped connection keeps its seat for a while), then leaves.
+// Who is at the table, in the order they sat down. Each person is connected ⇄ reconnecting (a
+// dropped connection keeps their seat for a while), then leaves. Bots are always connected.
 export class TableRoomMembers {
   readonly #members = new Map<string, TableRoomMember>();
   readonly #random: () => number;
@@ -20,9 +22,19 @@ export class TableRoomMembers {
     this.#random = random;
   }
 
-  // Everyone with a seat, reconnecting people included.
+  // Every seat taken: people (reconnecting ones included) and bots.
   get count(): number {
     return this.#members.size;
+  }
+
+  // People only: a table with nobody but bots at it is empty.
+  get people(): number {
+    return this.all.filter((member) => !member.bot).length;
+  }
+
+  // The bot that sat down last, if any.
+  get newestBot(): TableRoomMember | undefined {
+    return this.all.findLast((member) => member.bot);
   }
 
   get all(): TableRoomMember[] {
@@ -54,7 +66,16 @@ export class TableRoomMembers {
     if (this.#members.has(id)) throw new TableRoomError('ALREADY_A_MEMBER');
 
     const name = cleanPersonName(requestedName ?? '') || pickMemberName(new Set(this.all.map((member) => member.name)), this.#random);
-    const member: TableRoomMember = { id, name, color: this.#freeColor(), connected: true };
+    const member: TableRoomMember = { id, name, color: this.#freeColor(), connected: true, bot: false };
+
+    this.#members.set(id, member);
+
+    return member;
+  }
+
+  // A bot gets the first bot name nobody has.
+  seatBot(id: string): TableRoomMember {
+    const member: TableRoomMember = { id, name: pickBotName(new Set(this.all.map((other) => other.name))), color: this.#freeColor(), connected: true, bot: true };
 
     this.#members.set(id, member);
 
