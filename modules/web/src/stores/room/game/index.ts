@@ -26,6 +26,7 @@ export interface RoomGameDeps {
   isLive: () => boolean;
   members: () => readonly MemberSnapshot[];
   sounds: SoundsService;
+  random: () => number;
 }
 
 // Refusals that mean the table moved on before a move got there (someone else was faster).
@@ -71,7 +72,7 @@ export class RoomGameStore {
     this.captions = new RoomGameCaptionsStore({ t, art, match: this.match, schedule, seatCount: () => this.match.seats.length, rules });
     this.result = new RoomGameResultStore({ t, art, send, match: this.match, clock: this.clock, targetScore: () => this.settings.targetScore });
     this.emotes = new RoomGameEmotesStore({ t, send, schedule, now: deps.now, sounds: deps.sounds });
-    this.moods = new RoomGameMoodsStore({ match: this.match, schedule, phase: () => this.state });
+    this.moods = new RoomGameMoodsStore({ match: this.match, schedule, phase: () => this.state, random: deps.random, members: deps.members });
     makeAutoObservable(this, {}, { autoBind: true });
     this.#listenForSounds(deps.sounds, deps.isLive);
     this.#introduceTheBell();
@@ -148,8 +149,9 @@ export class RoomGameStore {
     return this.#isSwapping ? this.#t('round.seat.swap', { name }) : this.emotes.muteLabel(seat, name);
   }
 
-  // The turn's sounds (spec §7): a chime when it's your turn, the fuse hissing while it burns, and
-  // the pinball machine's jackpot when a round is won (and louder for the match).
+  // The turn's sounds (spec §7): a chime when it's your turn (and "Your turn!" over the table, for
+  // anyone playing muted), the fuse hissing while it burns, and the pinball machine's jackpot when
+  // a round is won (and louder for the match).
   // The first time anyone's down to one card, a line says what the bell does.
   #introduceTheBell(): void {
     reaction(
@@ -161,7 +163,12 @@ export class RoomGameStore {
   #listenForSounds(sounds: SoundsService, isLive: () => boolean): void {
     reaction(
       () => this.isPlaying && this.match.isMyTurn,
-      (mine) => mine && sounds.play('chime'),
+      (mine) => {
+        if (!mine) return;
+
+        sounds.play('chime');
+        this.turn.announce();
+      },
     );
 
     reaction(

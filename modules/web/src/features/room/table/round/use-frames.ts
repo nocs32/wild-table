@@ -3,7 +3,7 @@ import { useCallback, useRef } from 'react';
 import { Vector3, type Camera, type Group, type Mesh, type MeshBasicMaterial, type MeshStandardMaterial } from 'three';
 import type { RoomGameStore } from '../../../../stores/room/game';
 import { cardSize } from '../../../../stores/table/body';
-import type { TableRoundStore } from '../../../../stores/table/round';
+import type { TableStore } from '../../../../stores/table';
 import type { TableRoundBody } from '../../../../stores/table/round/body';
 import type { HandFrame } from '../../../../stores/table/round/layout';
 
@@ -20,14 +20,15 @@ const scratch = { at: new Vector3(), left: new Vector3(), right: new Vector3(), 
 const along = (camera: Camera, x: number, y: number, out: Vector3): Vector3 =>
   out.set(x, y, 0.5).unproject(camera).sub(camera.position).normalize().multiplyScalar(handDistance).add(camera.position);
 
-// Where your hand sits: a plane facing the camera across the bottom of the view.
-const handFrame = (camera: Camera): HandFrame => {
+// Where your hand sits: a plane facing the camera across the bottom of the view, between `from`
+// and `to` (screen units, -1 to 1): the part of the view nothing covers.
+const handFrame = (camera: Camera, from: number, to: number): HandFrame => {
   const { at, left, right, across, up, forward } = scratch;
 
   camera.getWorldDirection(forward);
-  along(camera, 0, handHeight, at);
-  along(camera, -1, handHeight, left);
-  along(camera, 1, handHeight, right);
+  along(camera, (from + to) / 2, handHeight, at);
+  along(camera, from, handHeight, left);
+  along(camera, to, handHeight, right);
   up.set(0, 1, 0).applyQuaternion(camera.quaternion);
 
   const width = left.distanceTo(right);
@@ -75,9 +76,10 @@ const shine = (group: Group, glow: number, dim: boolean): void => {
 
 // The round's frame loop, outside React (spec §8.3): where your hand is, every card's springs, and
 // the meshes moved to match. Returns how each card's group signs up.
-export const useRoomTableRoundFrames = (round: TableRoundStore, game: RoomGameStore): RoomTableRoundRegister => {
+export const useRoomTableRoundFrames = (table: TableStore, game: RoomGameStore): RoomTableRoundRegister => {
   const groups = useRef(new Map<string, Group>());
-  const { camera } = useThree();
+  const { camera, size } = useThree();
+  const round = table.round;
 
   useFrame(({ clock }, dt) => {
     const playable = game.hand.playableIds;
@@ -85,7 +87,7 @@ export const useRoomTableRoundFrames = (round: TableRoundStore, game: RoomGameSt
     const pulse = 0.55 + Math.sin(clock.elapsedTime * 3.2) * 0.2;
     const { hand, cards } = round;
 
-    round.setFrame(handFrame(camera));
+    round.setFrame(handFrame(camera, -1 + (table.insetLeft * 2) / size.width, 1 - (table.insetRight * 2) / size.width));
     round.step(dt, performance.now());
 
     groups.current.forEach((group, key) => {

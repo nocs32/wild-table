@@ -4,7 +4,7 @@ import type { SpotLight } from 'three';
 import type { TableStore } from '../../../stores/table';
 
 // How far below where it hangs from the lamp's bulb is: its light swings that far across the table.
-const bulbDrop = 1.9;
+const bulbDrop = 1.13;
 
 // The lamp's light follows the lamp, every frame: when it swings, the pool of light sways across
 // the table (spec §8.1).

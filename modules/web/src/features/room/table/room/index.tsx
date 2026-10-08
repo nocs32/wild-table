@@ -30,7 +30,7 @@ export function RoomTableRoom(): ReactElement {
         <planeGeometry args={[24, 6]} />
         <meshStandardMaterial map={panelling} roughness={0.75} />
       </mesh>
-      <mesh position={[0, 0.12, -4.55]}>
+      <mesh position={[0, 0.8, -4.55]}>
         <planeGeometry args={[2.8, 0.875]} />
         <meshBasicMaterial map={neon} color={glow.sign} transparent blending={AdditiveBlending} depthWrite={false} toneMapped={false} fog={false} />
       </mesh>

@@ -85,6 +85,19 @@ export const keyframes = defineKeyframes({
     '0%, 100%': { transform: 'scale(1)' },
     '50%': { transform: 'scale(1.07)' },
   },
+  // Your turn: lamplight breathing in from the edges of the view.
+  edgeGlow: {
+    '0%, 100%': { boxShadow: 'inset 0 0 50px 10px rgba(255, 201, 99, 0.4)' },
+    '50%': { boxShadow: 'inset 0 0 90px 22px rgba(255, 201, 99, 0.7)' },
+  },
+  // "Your turn!": pops up past full size, settles, holds, and fades away.
+  announce: {
+    '0%': { opacity: '0', transform: 'scale(0.6)' },
+    '14%': { opacity: '1', transform: 'scale(1.1)' },
+    '24%': { transform: 'scale(1)' },
+    '78%': { opacity: '1', transform: 'scale(1)' },
+    '100%': { opacity: '0', transform: 'scale(0.96)' },
+  },
   // Whose turn it is: their place card breathes lamplight.
   turnGlow: {
     '0%, 100%': { boxShadow: '0 0 0 3px rgba(255, 201, 99, 0.3), 0 0 14px rgba(255, 201, 99, 0.5)' },

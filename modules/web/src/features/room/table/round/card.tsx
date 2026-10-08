@@ -25,7 +25,7 @@ export const RoomTableRoundCard = observer(function RoomTableRoundCard({ view, b
 
   return (
     <group ref={(group) => register(view.key, group)}>
-      <mesh castShadow receiveShadow onPointerOver={pointer.over} onPointerOut={pointer.out} onPointerDown={pointer.down}>
+      <mesh castShadow receiveShadow onPointerOver={pointer.over} onPointerMove={pointer.over} onPointerOut={pointer.out} onPointerDown={pointer.down}>
         <boxGeometry args={[cardSize.width, cardSize.thickness, cardSize.depth]} />
         <meshStandardMaterial attach="material-0" color={furniture.cardEdge} roughness={0.6} />
         <meshStandardMaterial attach="material-1" color={furniture.cardEdge} roughness={0.6} />
@@ -33,7 +33,7 @@ export const RoomTableRoundCard = observer(function RoomTableRoundCard({ view, b
         <meshStandardMaterial attach="material-3" map={face ?? back} alphaTest={0.5} roughness={0.35} emissive={furniture.cardEdge} emissiveMap={face ?? back} emissiveIntensity={0.28} />
         <meshStandardMaterial attach="material-4" color={furniture.cardEdge} roughness={0.6} />
         <meshStandardMaterial attach="material-5" color={furniture.cardEdge} roughness={0.6} />
-        <mesh position={[0, cardSize.thickness, 0]} rotation-x={Math.PI / 2} visible={false}>
+        <mesh position={[0, cardSize.thickness, 0]} rotation-x={Math.PI / 2} visible={false} raycast={() => null}>
           <planeGeometry args={[cardSize.width * 1.3, cardSize.depth * 1.24]} />
           <meshBasicMaterial map={halo} color={glow.amber} toneMapped={false} transparent opacity={0} blending={AdditiveBlending} depthWrite={false} side={DoubleSide} />
         </mesh>

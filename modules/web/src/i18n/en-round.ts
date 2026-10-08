@@ -11,6 +11,7 @@ export const enRound = {
   watchingHint: 'You’ll be dealt in at the next one, starting from 0 points.',
   standIn: 'A bot is playing for you',
   standInHint: 'You ran out of time twice. Play a card or draw and you’re back.',
+  yourTurn: 'Your turn!',
   turn: {
     play: 'Your turn',
     playHint: 'Play a card that glows: drag it to the pile, or click it twice. Or click the deck to draw.',

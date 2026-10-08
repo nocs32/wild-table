@@ -9,7 +9,8 @@ import { useRoomTableRoomProp } from './use-prop';
 import { useRoomTablePoke } from '../use-poke';
 
 // The hanging stained-glass lamp over the table (spec §8.1): panes in the four card colours, a
-// bright bulb under it, on a long chain from the ceiling. Poke it and it swings.
+// bright bulb under it, on a chain from the ceiling, hung high enough not to hide the player across
+// the table, or whoever's on the loveseat in the lobby. Poke it and it swings.
 export const RoomTableRoomLamp = observer(function RoomTableRoomLamp(): ReactElement {
   const { table } = useRootStore();
   const texture = useStainedGlassTexture();
@@ -19,11 +20,11 @@ export const RoomTableRoomLamp = observer(function RoomTableRoomLamp(): ReactEle
 
   return (
     <group position={[0, 3.36, 0.05]} ref={swing}>
-      <mesh position={[0, -0.85, 0]}>
-        <cylinderGeometry args={[0.012, 0.012, 1.7, 6]} />
+      <mesh position={[0, -0.47, 0]}>
+        <cylinderGeometry args={[0.012, 0.012, 0.94, 6]} />
         <meshStandardMaterial color={furniture.ink} metalness={0.6} roughness={0.5} />
       </mesh>
-      <group position={[0, -1.82, 0]}>
+      <group position={[0, -1.07, 0]}>
         <group ref={wiggle}>
           <mesh onPointerOver={pointer.over} onPointerOut={pointer.out} onClick={pointer.click}>
             <cylinderGeometry args={[0.13, 0.42, 0.24, 12, 1, true]} />
