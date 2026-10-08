@@ -1,4 +1,4 @@
-import type { GamePhase, GameSnapshot, HandSnapshot, MemberSnapshot, PlayEvent, TableErrorCode, TableHoverEvent, TableIntentType, TablePeekEvent } from '@wild-table/protocol';
+import type { GamePhase, GameSnapshot, HandSnapshot, MemberSnapshot, PlayEvent, TableEmoteEvent, TableErrorCode, TableHoverEvent, TableIntentType, TablePeekEvent } from '@wild-table/protocol';
 import { makeAutoObservable, reaction } from 'mobx';
 import type { Schedule, SoundsService } from '../../../services';
 import type { ArtStore } from '../../art';
@@ -9,6 +9,7 @@ import { RoomGameClockStore } from './clock';
 import { RoomGameEmotesStore } from './emotes';
 import { RoomGameHandStore } from './hand';
 import { RoomGameMatchStore } from './match';
+import { RoomGameMoodsStore } from './moods';
 import { RoomGameResultStore } from './result';
 import { RoomGameSettingsStore } from './settings';
 import { RoomGameTurnStore } from './turn';
@@ -50,6 +51,7 @@ export class RoomGameStore {
   readonly captions: RoomGameCaptionsStore;
   readonly result: RoomGameResultStore;
   readonly emotes: RoomGameEmotesStore;
+  readonly moods: RoomGameMoodsStore;
   #listeners: RoomGameListener[] = [];
   #stopFuse: (() => void) | null = null;
   readonly #send: TableSend;
@@ -69,6 +71,7 @@ export class RoomGameStore {
     this.captions = new RoomGameCaptionsStore({ t, art, match: this.match, schedule, seatCount: () => this.match.seats.length, rules });
     this.result = new RoomGameResultStore({ t, art, send, match: this.match, clock: this.clock, targetScore: () => this.settings.targetScore });
     this.emotes = new RoomGameEmotesStore({ t, send, schedule, now: deps.now, sounds: deps.sounds });
+    this.moods = new RoomGameMoodsStore({ match: this.match, schedule, phase: () => this.state });
     makeAutoObservable(this, {}, { autoBind: true });
     this.#listenForSounds(deps.sounds, deps.isLive);
     this.#introduceTheBell();
@@ -94,11 +97,13 @@ export class RoomGameStore {
     if (game.phase === 'lobby') {
       this.captions.clear();
       this.emotes.setOpen(false);
+      this.moods.clear();
     }
   }
 
   receivePlay(events: readonly PlayEvent[]): void {
     this.captions.receive(events);
+    this.moods.receive(events);
     this.#listeners.forEach((listener) => listener.played(events));
   }
 
@@ -106,6 +111,14 @@ export class RoomGameStore {
   receiveRefusal(type: TableIntentType, code: TableErrorCode): void {
     this.#listeners.forEach((listener) => listener.refused(type));
     this.captions.why(this.#refusalText(type, code));
+  }
+
+  // An emote: a speech bubble, and the sender's figure acts it out (unless you muted them).
+  receiveEmote(event: TableEmoteEvent): void {
+    if (this.emotes.isMuted(event.seat)) return;
+
+    this.emotes.receive(event);
+    this.moods.receiveEmote(event.seat, event.line);
   }
 
   receiveHover(event: TableHoverEvent): void {

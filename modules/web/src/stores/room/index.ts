@@ -28,7 +28,7 @@ const createConnection = (room: RoomStore, services: Services, t: Translate): Ro
       play: (events) => room.game.receivePlay(events),
       peek: (event) => room.game.receivePeek(event),
       hover: (event) => room.game.receiveHover(event),
-      emote: (event) => room.game.emotes.receive(event),
+      emote: (event) => room.game.receiveEmote(event),
     },
   });
 

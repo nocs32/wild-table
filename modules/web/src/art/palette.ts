@@ -1,4 +1,4 @@
-import type { CardColour } from '@wild-table/protocol';
+import { playerColors, type CardColour, type PlayerColor } from '@wild-table/protocol';
 import { token } from 'styled-system/tokens';
 
 // The art's colours come from the design system, so the cards, the table and the HTML all match.
@@ -37,6 +37,9 @@ export const paint = {
   neonPinkDeep: token('colors.neon.pinkDeep'),
   neonCyan: token('colors.neon.cyan'),
 };
+
+// Each player's own colour, as their chip has it: their stick figure's hat.
+export const playerPaint: Record<PlayerColor, string> = Object.fromEntries(playerColors.map((colour) => [colour, token(`colors.player.${colour}`)])) as Record<PlayerColor, string>;
 
 // Canvas text uses the same typeface as the page.
 export const artFont = token('fonts.display');
