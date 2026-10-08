@@ -1,7 +1,7 @@
 // A round of the game: dealing, the moves, and what each seat may see and do.
 export { applyMove, applyTimeout, mostHeldColour, timeoutMove } from './apply.js';
-export { caughtPenalty } from './bell.js';
-export { heldByBeat, stepMinMs, turnClockMs, type TurnClockTimes } from './clock.js';
+export { bellCost, bellPenalty, bellTargets } from './bell.js';
+export { stepMinMs, turnClockMs, type TurnClockTimes } from './clock.js';
 export { dealRound, nextFirstSeat, type DealOptions } from './deal.js';
 export { isSameCard, isStackOn, playBlock, type PlayBlock, type PlayContext } from './play-now.js';
 export { publicEvents, roundSnapshot, type PublicEvents, type RoundPeek } from './public.js';

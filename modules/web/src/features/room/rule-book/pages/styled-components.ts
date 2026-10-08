@@ -32,7 +32,7 @@ export const RoomRuleBookStepNumber = styled('span', {
   },
 });
 
-// Two boxes side by side: fair and bluff, safe and caught, take and challenge.
+// Two boxes side by side: fair and bluff, the block and its cost, take and challenge.
 export const RoomRuleBookPair = styled('div', {
   base: { display: 'grid', gap: '14px', lg: { gridTemplateColumns: '1fr 1fr' } },
 });

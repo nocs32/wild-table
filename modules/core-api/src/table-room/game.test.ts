@@ -10,21 +10,14 @@ const systemLines = ({ feed }: TestGame): unknown[] => feed.items.map((item) => 
 // Everyone plays as the planning bot would, through the game's own moves, until the round ends.
 const playOut = (table: TestGame): void => {
   const random = createRandom(5);
-  const { game, cards, timers } = table;
+  const { game, cards } = table;
 
   for (let guard = 0; guard < 3000 && game.phase === 'round'; guard++) {
     const round = cards.round;
 
     if (!round) return;
 
-    try {
-      if (round.race) game.move(round.race, { type: 'bell' }, 0);
-      else game.move(round.turn, botMove('planner', cards.view(round.turn), cards.legal(round.turn), random) ?? { type: 'draw' }, 0.5);
-    } catch (error) {
-      if (!(error instanceof TableRoomError) || error.code !== 'TOO_SOON') throw error;
-
-      timers.advance(1600);
-    }
+    game.move(round.turn, botMove('planner', cards.view(round.turn), cards.legal(round.turn), random) ?? { type: 'draw' }, 0.5);
   }
 };
 

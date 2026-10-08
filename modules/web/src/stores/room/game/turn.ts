@@ -37,7 +37,7 @@ const fuseSeconds = 8;
 
 // What the turn is waiting for, in words, with the buttons for it when it's yours (spec D7): play
 // or draw, play or keep a drawn card, pick a colour, answer a +2 or +4, or pick a hand to swap with.
-// And the Last card! race, and how long is left.
+// And what the Last card! bell does now, and how long is left.
 export class RoomGameTurnStore {
   readonly #deps: RoomGameTurnDeps;
 
@@ -83,16 +83,26 @@ export class RoomGameTurnStore {
     return match.isMyTurn ? this.#myPrompt() : this.#theirPrompt();
   }
 
-  // The bell's line while it's lit (spec §5.6): your own last card, catching someone, or calling early.
+  // What the Last card! bell does right now, in a line (spec §5.6): hit it on your turn to make
+  // whoever's on one card draw 2, or wait for your turn; or watch out, you're the one on one card.
   get bellLine(): string {
     const { match, hand, t } = this.#deps;
-    const race = match.round?.race ?? null;
+    const names = this.#names(match.bellTargets.map((seat) => seat.name));
 
-    if (race === match.meId) return t('round.bell.mine');
+    if (hand.canRing) return t('round.bell.ready', { names });
 
-    if (race !== null) return t('round.bell.catch', { name: match.nameOf(race) });
+    if (match.bellTargets.length > 0 && hand.hasRung) return t('round.bell.used');
 
-    return hand.canRing ? t('round.bell.early') : '';
+    if (match.bellTargets.length > 0) return t('round.bell.wait', { names });
+
+    return match.me?.isOnLastCard ? t('round.bell.mine') : '';
+  }
+
+  // "Ace", "Ace and Chip", "Ace, Chip and Dice".
+  #names(names: readonly string[]): string {
+    const last = names.at(-1) ?? '';
+
+    return names.length < 2 ? last : `${names.slice(0, -1).join(', ')}${this.#deps.t('round.bell.and')}${last}`;
   }
 
   #myPrompt(): TurnPromptView {
@@ -113,9 +123,7 @@ export class RoomGameTurnStore {
       case 'swap':
         return mine(t('round.turn.swap'), t('round.turn.swapHint'), this.#swapActions());
       default:
-        if (hand.isHeldBack) return mine(t('round.turn.raceBeat'), t('round.turn.raceBeatHint', { name: match.nameOf(round?.race ?? null) }));
-
-        return mine(t('round.turn.play'), t(this.#deps.isTouch() ? 'round.turn.playHintTouch' : 'round.turn.playHint'));
+        return mine(t('round.turn.play'), this.#playHint(), this.#bellActions());
     }
   }
 
@@ -134,6 +142,21 @@ export class RoomGameTurnStore {
     const challenge: TurnActionView = { key: 'challenge', label: t('round.actions.challenge'), tone: 'primary', run: hand.challenge };
 
     return { title: t('round.turn.hit4'), hint, isMine: true, actions: canChallenge() ? [challenge, take] : [take] };
+  }
+
+  // How to play, and when the bell is yours to hit, what it does (spec D7).
+  #playHint(): string {
+    const { t, hand, isTouch } = this.#deps;
+    const hint = t(isTouch() ? 'round.turn.playHintTouch' : 'round.turn.playHint');
+
+    return hand.canRing ? `${hint} ${this.bellLine}` : hint;
+  }
+
+  // Someone else is down to one card: the bell, as a button too (spec §5.6).
+  #bellActions(): TurnActionView[] {
+    const { t, hand } = this.#deps;
+
+    return hand.canRing ? [{ key: 'bell', label: t('round.actions.bell'), tone: 'secondary', run: hand.ring }] : [];
   }
 
   #colourActions(): TurnActionView[] {

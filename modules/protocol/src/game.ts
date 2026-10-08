@@ -28,10 +28,6 @@ export type GameSettingKey = 'targetScore' | 'turnSeconds' | 'handSize';
 // A change from someone at the table: any of the numbers, and any of the switches.
 export type GameSettingsPatch = Partial<Pick<GameSettings, GameSettingKey>> & { houseRules?: Partial<HouseRules> };
 
-// After a Last card! race opens, the next player's turn waits this long, so the race gets its
-// chance (spec §5.6). The web app holds that player's cards back for as long.
-export const raceBeatMs = 1500;
-
 export const gameLimits = {
   targetScore: { min: 100, max: 500, step: 50 },
   turnSeconds: { min: 10, max: 40, step: 5 },

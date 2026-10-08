@@ -62,7 +62,7 @@ export class RoomGameStore {
     this.#send = send;
     this.#t = t;
     this.settings = new RoomGameSettingsStore({ t, send, isEditable: () => this.state === 'lobby' });
-    this.match = new RoomGameMatchStore({ t, members: deps.members, now: deps.now });
+    this.match = new RoomGameMatchStore({ t, members: deps.members });
     this.clock = new RoomGameClockStore({ now: deps.now, repeat: deps.repeat });
     this.hand = new RoomGameHandStore({ t, send, match: this.match, clock: this.clock, rules, schedule });
     this.turn = new RoomGameTurnStore({ t, match: this.match, hand: this.hand, clock: this.clock, canChallenge: () => !rules().wild4AnyTime, isTouch: deps.isTouch });
@@ -71,6 +71,7 @@ export class RoomGameStore {
     this.emotes = new RoomGameEmotesStore({ t, send, schedule, now: deps.now, sounds: deps.sounds });
     makeAutoObservable(this, {}, { autoBind: true });
     this.#listenForSounds(deps.sounds, deps.isLive);
+    this.#introduceTheBell();
   }
 
   get isLobby(): boolean {
@@ -136,6 +137,14 @@ export class RoomGameStore {
 
   // The turn's sounds (spec §7): a chime when it's your turn, the fuse hissing while it burns, and
   // the pinball machine's jackpot when a round is won (and louder for the match).
+  // The first time anyone's down to one card, a line says what the bell does.
+  #introduceTheBell(): void {
+    reaction(
+      () => this.isPlaying && this.match.isBellLit,
+      (lit) => lit && this.captions.introduceBell(),
+    );
+  }
+
   #listenForSounds(sounds: SoundsService, isLive: () => boolean): void {
     reaction(
       () => this.isPlaying && this.match.isMyTurn,
@@ -162,9 +171,9 @@ export class RoomGameStore {
   #refusalText(type: TableIntentType, code: TableErrorCode): string {
     const t = this.#t;
 
-    if (code === 'TOO_SOON') return t('round.refused.tooSoon');
+    if (code === 'BELL_USED') return t('round.refused.bellUsed');
 
-    if (type === 'bell' && code === 'NO_RACE') return t('round.refused.bell');
+    if (code === 'NO_TARGET') return t('round.refused.noTarget');
 
     return lateCodes.has(code) && type !== 'hover' ? t('round.refused.late') : '';
   }

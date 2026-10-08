@@ -28,10 +28,10 @@ export const tableErrorCodes = [
   'NOT_IN_HAND',
   'DOES_NOT_FIT',
   'WRONG_STEP',
-  'NO_RACE',
+  // The Last card! bell needs someone else down to one card, and rings once a round for each player.
+  'NO_TARGET',
+  'BELL_USED',
   'NOT_A_SEAT',
-  // The next player waits a beat after a Last card! race opens, so the race gets its chance (§5.6).
-  'TOO_SOON',
 ] as const;
 
 export type TableErrorCode = (typeof tableErrorCodes)[number];

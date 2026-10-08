@@ -3,7 +3,7 @@ import { isWild, type Card, type NumberFace } from '@wild-table/protocol';
 import { isFairWild4 } from '../plays.js';
 import { playBlock, type PlayBlock, type PlayContext } from './play-now.js';
 import { passHands } from './seven-zero.js';
-import { closeRace, drawCards, handOf, passTurn, roundPoints, seatAfter, topCard } from './table.js';
+import { drawCards, handOf, passTurn, roundPoints, seatAfter, topCard } from './table.js';
 import type { MoveError, RoundContext, RoundState, SeatId } from './types.js';
 
 // What `seat` sees of the round, for the play checks.
@@ -66,7 +66,7 @@ const playNumber = (context: RoundContext, seat: SeatId, card: NumberFace): void
     return;
   }
 
-  if (state.rules.sevenZero && card.value === 0) passHands(context, seat);
+  if (state.rules.sevenZero && card.value === 0) passHands(context);
 
   passTurn(context, seat);
 };
@@ -105,20 +105,9 @@ const finishRound = (context: RoundContext, seat: SeatId, card: Card): void => {
 
   state.pendingDraw = 0;
   state.wild4 = null;
-  state.race = null;
   state.winner = seat;
 
   context.events.push({ type: 'roundOver', winner: seat, points: roundPoints(state, seat) });
-};
-
-// Down to one card: the Last card! race opens, unless they hit the bell early (spec §5.6).
-const checkLastCard = (context: RoundContext, seat: SeatId): void => {
-  const { state } = context;
-  const calledEarly = state.earlyCall === seat;
-
-  state.earlyCall = null;
-
-  if (handOf(state, seat).length === 1 && !calledEarly) state.race = seat;
 };
 
 export const playCard = (context: RoundContext, seat: SeatId, cardId: string): MoveError | null => {
@@ -134,7 +123,6 @@ export const playCard = (context: RoundContext, seat: SeatId, cardId: string): M
 
   const jumpIn = seat !== state.turn;
 
-  closeRace(context, seat);
   state.hands[seat] = hand.filter((other) => other !== card);
   state.pile.push(card);
   state.turn = seat;
@@ -149,7 +137,6 @@ export const playCard = (context: RoundContext, seat: SeatId, cardId: string): M
     return null;
   }
 
-  checkLastCard(context, seat);
   applyEffect(context, seat, card, card.kind === 'wild4' && !isFairWild4(hand, state.colour, state.rules));
 
   return null;

@@ -1,5 +1,5 @@
 // Public API of the game engine: pure logic, no DOM, no Node.
-export { botBellDelay, botJumpInDelay, botMove, plannedMove, randomMove, type BotLevel } from './bots.js';
+export { botJumpInDelay, botMove, plannedMove, randomMove, type BotLevel } from './bots.js';
 export { botNames, pickBotName } from './bot-names.js';
 export { allFaces, createDeck, faceKey } from './deck.js';
 export { ruleBookExamples, type PlayExample } from './examples.js';

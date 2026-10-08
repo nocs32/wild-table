@@ -14,8 +14,8 @@ const send = <K extends TableIntentType>(seat: Seat, type: K, message: TableInte
   return true;
 };
 
-// One step of a simple player: hit the bell for its own last card, and on its turn play the first
-// card that fits (or draw), keep a drawn card, pick red, take the cards, swap with anyone.
+// One step of a simple player: on its turn play the first card that fits (or draw), keep a drawn
+// card, pick red, take the cards, swap with anyone.
 const act = (seat: Seat): boolean => {
   const view = latest(seat, 'view');
   const hand = latest(seat, 'hand');
@@ -23,8 +23,6 @@ const act = (seat: Seat): boolean => {
   const round = view?.game.match?.round;
 
   if (!view || !round || !hand || view.game.phase !== 'round') return false;
-
-  if (round.race === me) return send(seat, 'bell', {});
 
   if (round.turn !== me) return false;
 

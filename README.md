@@ -6,7 +6,7 @@ A card game you play with friends in the browser, on a 3D card table.
 
 - **Match and slap:** play a card that matches the top of the pile by colour or by number, or a Wild. Drag it onto the pile, throw it, or click it twice; the harder you throw, the harder it slaps.
 - **Hit back:** Skip, Reverse and +2 land on the next player. A Wild picks the colour; a Wild +4 makes them draw four, unless they dare to challenge it.
-- **Last card!** Down to one card? Smack the desk bell before anyone catches you.
+- **Last card!** Someone down to one card? On your turn, smack the desk bell instead of playing: they draw 2, you draw 1. Once a round, so pick your moment.
 - **First to the target score wins:** the round's winner scores the cards left in everyone else's hands.
 - **House rules** you can switch on (stacking, jump-in, 7-0 and more), **bots** to fill empty seats, and a **rule book** one click away.
 - **A 90s basement rec room:** green felt under a hanging lamp, a pinball machine and a jukebox glowing in the dark, and things on the table to poke while you wait.

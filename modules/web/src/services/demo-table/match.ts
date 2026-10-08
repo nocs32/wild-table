@@ -3,7 +3,6 @@ import {
   applyTimeout,
   dealRound,
   handOf,
-  heldByBeat,
   MatchRecord,
   nextFirstSeat,
   publicEvents,
@@ -16,13 +15,12 @@ import {
   type RoundPeek,
   type RoundState,
 } from '@wild-table/engine';
-import { gameLimits, raceBeatMs, type FeedEvent, type GamePhase, type GameSettings, type HandSnapshot, type MatchSnapshot, type PlayEvent, type TableErrorCode } from '@wild-table/protocol';
+import { gameLimits, type FeedEvent, type GamePhase, type GameSettings, type HandSnapshot, type MatchSnapshot, type PlayEvent, type TableErrorCode } from '@wild-table/protocol';
 import { DemoPlans } from './plans';
 import type { DemoDeps, DemoMember } from './types';
 
-// The server's pace (core-api `limits.ts`): the scores show for 10 seconds after a round, and the
-// next player waits a beat after a Last card! race opens (spec §4.3, §5.6).
-export const demoPace = { roundOverMs: 10_000, raceBeatMs };
+// The server's pace (core-api `limits.ts`): the scores show for 10 seconds after a round (spec §4.3).
+export const demoPace = { roundOverMs: 10_000 };
 
 export interface DemoMatchHost {
   members: () => readonly DemoMember[];
@@ -46,7 +44,6 @@ export class DemoMatch {
   readonly record = new MatchRecord();
   // When the turn runs out, or the next round is dealt.
   endsAt = 0;
-  beatUntil = 0;
   #played: PlayEvent[] = [];
   #peeks: RoundPeek[] = [];
   readonly #deps: DemoDeps;
@@ -79,9 +76,7 @@ export class DemoMatch {
 
     if (!this.record.isSeated(seat)) return 'NOT_PLAYING';
 
-    if (this.#deps.now() < this.beatUntil && heldByBeat(round, seat, move)) return 'TOO_SOON';
-
-    const error = this.#apply(applyMove(round, seat, move, this.#deps.random), strength, move.type === 'bell');
+    const error = this.#apply(applyMove(round, seat, move, this.#deps.random), strength);
 
     if (error === null && person) this.record.acted(seat);
 
@@ -143,17 +138,12 @@ export class DemoMatch {
     this.#plans.cancelAll();
   }
 
-  #apply(result: MoveResult, strength: number, wasBell: boolean): TableErrorCode | null {
+  #apply(result: MoveResult, strength: number): TableErrorCode | null {
     if (!result.ok) return result.error === 'ROUND_OVER' ? 'WRONG_PHASE' : result.error;
-
-    const racing = this.round?.race ?? null;
 
     this.round = result.state;
     this.#record(result.events, strength);
-
-    if (result.state.race !== null && result.state.race !== racing) this.beatUntil = this.#deps.now() + demoPace.raceBeatMs;
-
-    this.#afterMove(result.events, wasBell);
+    this.#afterMove(result.events);
 
     return null;
   }
@@ -184,7 +174,6 @@ export class DemoMatch {
 
     this.round = state;
     this.phase = 'round';
-    this.beatUntil = 0;
     this.#record(events, 0);
     this.#clock(this.#host.settings().turnSeconds * 1000, () => this.#timeout());
   }
@@ -201,9 +190,9 @@ export class DemoMatch {
     this.#plans.later('clock', delayMs, onEnd);
   }
 
-  // The clock after a move, as on the server: a new turn gets the whole time (plus a race's beat), a
-  // new step in the same turn what's left (at least a few seconds), and a bell leaves it be.
-  #afterMove(events: readonly RoundEvent[], wasBell: boolean): void {
+  // The clock after a move, as on the server: a new turn gets the whole time, a new step in the same
+  // turn what's left (at least a few seconds).
+  #afterMove(events: readonly RoundEvent[]): void {
     if (this.round?.winner) {
       this.#endRound(this.round, this.round.winner);
 
@@ -211,9 +200,9 @@ export class DemoMatch {
     }
 
     const now = this.#deps.now();
-    const ms = turnClockMs(events, wasBell, { turnMs: this.#host.settings().turnSeconds * 1000, leftMs: this.endsAt - now, beatMs: Math.max(0, this.beatUntil - now) });
+    const ms = turnClockMs(events, { turnMs: this.#host.settings().turnSeconds * 1000, leftMs: this.endsAt - now });
 
-    if (ms !== null) this.#clock(ms, () => this.#timeout());
+    this.#clock(ms, () => this.#timeout());
   }
 
   #timeout(): void {
@@ -227,7 +216,7 @@ export class DemoMatch {
 
     this.#played = [...this.#played, { type: 'timedOut', seat: round.turn, step: round.step.kind }];
     this.record.timedOut(round.turn);
-    this.#apply(result, 0, false);
+    this.#apply(result, 0);
     this.#host.changed();
   }
 

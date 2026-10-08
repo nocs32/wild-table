@@ -3,37 +3,23 @@ import { after, codesOf, makeRound, move, play } from './test-round.js';
 
 const bell = { type: 'bell' } as const;
 
-test('down to one card opens the race; hitting the bell first keeps you safe', () => {
-  const racing = after(play(makeRound({ hands: { a: ['r2', 'b1'], b: ['y1', 'y2'] }, top: 'r7' }), 'a', 'r2'));
+test('the bell: on your turn, instead of playing, everyone else on one card draws 2 and you draw 1', () => {
+  const state = makeRound({ hands: { a: ['r2', 'b1', 'g3'], b: ['y1'], c: ['g4'], d: ['y5', 'y6'] }, top: 'r7' });
+  const rung = move(state, 'a', bell);
+  const after1 = after(rung);
 
-  expect(racing.race).toBe('a');
-
-  const safe = move(racing, 'a', bell);
-
-  expect(after(safe).race).toBeNull();
-  expect(safe.ok && safe.events).toEqual([{ type: 'bell', seat: 'a', result: 'safe', caught: null }]);
+  expect(rung.ok && rung.events[0]).toEqual({ type: 'bell', seat: 'a', hit: ['b', 'c'] });
+  expect([after1.hands.a?.length, after1.hands.b?.length, after1.hands.c?.length, after1.hands.d?.length]).toEqual([4, 3, 3, 2]);
+  expect(after1.turn).toBe('b');
 });
 
-test('caught: someone else hits the bell first, and the last card’s player draws 2', () => {
-  const racing = after(play(makeRound({ hands: { a: ['r2', 'b1'], b: ['y1', 'y2'] }, top: 'r7' }), 'a', 'r2'));
-  const caught = after(move(racing, 'b', bell));
+test('the bell needs your turn, the play step, and someone else down to one card', () => {
+  const state = makeRound({ hands: { a: ['r2', 'b1'], b: ['y1'], c: ['g4', 'g5'] }, top: 'r7' });
 
-  expect([caught.race, caught.hands.a?.length]).toEqual([null, 3]);
-});
-
-test('the race ends once the next player plays or draws; with no race, the bell does nothing', () => {
-  const racing = after(play(makeRound({ hands: { a: ['r2', 'b1'], b: ['y1', 'y2'] }, top: 'r7', deck: ['g4'] }), 'a', 'r2'));
-  const drawn = after(move(racing, 'b', { type: 'draw' }));
-
-  expect(drawn.race).toBeNull();
-  expect(move(drawn, 'a', bell)).toEqual({ ok: false, error: 'NO_RACE' });
-});
-
-test('hitting the bell early, holding two cards on your turn, means no race', () => {
-  const early = after(move(makeRound({ hands: { a: ['r2', 'b1'], b: ['y1'] }, top: 'r7' }), 'a', bell));
-
-  expect(early.earlyCall).toBe('a');
-  expect(after(play(early, 'a', 'r2')).race).toBeNull();
+  expect(move(state, 'b', bell)).toEqual({ ok: false, error: 'NOT_YOUR_TURN' });
+  expect(move({ ...state, step: { kind: 'swap' } }, 'a', bell)).toEqual({ ok: false, error: 'WRONG_STEP' });
+  expect(move({ ...state, turn: 'c' }, 'c', bell).ok).toBe(true);
+  expect(move(makeRound({ hands: { a: ['r2'], b: ['y1', 'y2'] }, top: 'r7' }), 'a', bell)).toEqual({ ok: false, error: 'NO_TARGET' });
 });
 
 test('stacking: answer a +2 with a +2, and whoever can’t answer draws the lot', () => {
@@ -82,4 +68,14 @@ test('+4 any time: never a bluff, and no challenge', () => {
   const picked = after(move(after(play(makeRound({ hands: { a: ['W4', 'g1'], b: ['y1'], c: ['b1'] }, top: 'g7', rules }), 'a', 'W4')), 'a', { type: 'pickColour', colour: 'blue' }));
 
   expect([picked.hands.b?.length, picked.turn]).toEqual([5, 'c']);
+});
+
+test('each player may ring the bell once a round', () => {
+  const state = makeRound({ hands: { a: ['r2', 'b1', 'g3'], b: ['y1'], c: ['g4', 'g5', 'g6'] }, top: 'r7' });
+  const rung = after(move(state, 'a', bell));
+  const again = { ...rung, turn: 'a', hands: { ...rung.hands, c: rung.hands.c?.slice(0, 1) ?? [] } };
+
+  expect(rung.bellsRung).toEqual(['a']);
+  expect(move(again, 'a', bell)).toEqual({ ok: false, error: 'BELL_USED' });
+  expect(move({ ...again, turn: 'b' }, 'b', bell).ok).toBe(true);
 });

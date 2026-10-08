@@ -11,11 +11,12 @@ import { useRoomTableRoundBell } from './use-bell';
 const spot: [number, number, number] = [1.22, 0, 0.5];
 
 // The Last card! desk bell (spec §5.6, §8.1). It lights up for everyone when someone's down to one
-// card, with a sign saying what hitting it does; whoever smacks it first wins the race. Ding!
+// card. On your turn, instead of playing, you can smack it once a round: everyone else on one card
+// draws 2, and you draw 1. A sign says so when it's yours to hit. Ding!
 export const RoomTableRoundBell = observer(function RoomTableRoundBell(): ReactElement {
   const { locale, room, table } = useRootStore();
   const { hand, turn } = room.game;
-  const refs = useRoomTableRoundBell(table.round, hand.canRing);
+  const refs = useRoomTableRoundBell(table.round, room.game.match.isBellLit, hand.canRing);
 
   return (
     <group position={spot}>
