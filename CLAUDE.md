@@ -11,7 +11,7 @@ Setup commit first (M0), then each phase gets its own branch and PR, as in the s
 1. **Web UI** (`feat/web-ui`), on local MobX stores against the demo table. **It starts with a feel check** of the 3D hand (hover, drag, throw, click, the slap) against the simplest bot, on a laptop and a real phone, reviewed together before the rest is built. Then we review it all together, then PR and merge.
 2. **Backend, and connecting the UI to it** (`feat/live-tables`). We review and check it together, then PR and merge.
 3. **CI** (`feat/ci`). PR and merge. The workflow (`.github/workflows/ci.yml`) came with the setup commit and has checked every PR since; the badge is in the README.
-4. **Hosting** (`feat/hosting`): `pnpm play` and the `wild-table` Cloudflare Tunnel on wild.timnox.dev.
+4. **Hosting** (`feat/hosting`): `pnpm play` and the `wild-table` Cloudflare Tunnel on wild.timnox.dev. The tunnel and its DNS record were created in M4 (credentials in `~/.cloudflared/`).
 
 **Every feature explains itself on screen** (spec D7, D27): cards you can play glow, a card that can't be played says why, the first time each special card is played a caption says what it did, and the rule book is one click away. Anything else people wouldn't guess (drag vs click, the Last card! bell, the +4 challenge, house-rule tent cards, emotes from your portrait, the props to poke) gets a short line or hint right where it's used. Check it in every UI review.
 
@@ -54,7 +54,7 @@ pnpm typecheck
 pnpm test          # engine + core-api; one module: pnpm --filter @wild-table/core-api test
 pnpm demo          # web only, against the demo table (no server): for UI work
 pnpm build         # production web build (CI runs lint, typecheck, test, build on every PR and push to main)
-pnpm play          # build + serve at https://wild.timnox.dev from this PC through a Cloudflare Tunnel (from M4)
+pnpm play          # build + serve at https://wild.timnox.dev from this PC through the wild-table Cloudflare Tunnel
 ```
 
 ## Gotchas
@@ -64,7 +64,7 @@ pnpm play          # build + serve at https://wild.timnox.dev from this PC throu
 - **pnpm workspaces:** the packages are listed in `pnpm-workspace.yaml`. Add a dependency with `pnpm --filter @wild-table/<module> add <pkg>`.
 - **pnpm's release-age guard:** pnpm refuses versions published in the last day. Pick the previous version instead of adding exceptions.
 - **No shared Colyseus state, and no peeking** (spec D13, §10.4): the server sends each person only their own hand; others see backs and a count. After joining or reconnecting, the browser asks for everything with `sync`.
-- **Hosting is `pnpm play`, not a cloud host** (free, no payment card), as in the siblings. It runs `vite preview` on `127.0.0.1:4176`, which reuses the dev `/api` + `/live` proxy and only accepts the wild.timnox.dev host, plus core-api and the `wild-table` Cloudflare Tunnel (credentials in `~/.cloudflared/`). The tunnel is created in M4; until then `pnpm play` stops at the tunnel. Stop `pnpm dev` first, since both need port 2570. The user starts `pnpm play` themselves: don't start it for them, give them the command.
+- **Hosting is `pnpm play`, not a cloud host** (free, no payment card), as in the siblings. It runs `vite preview` on `127.0.0.1:4176`, which reuses the dev `/api` + `/live` proxy and only accepts the wild.timnox.dev host, plus core-api and the `wild-table` Cloudflare Tunnel (credentials in `~/.cloudflared/`). The tunnel and the wild.timnox.dev DNS record exist since M4 (2026-10-08). Stop `pnpm dev` first, since both need port 2570. The user starts `pnpm play` themselves: don't start it for them, give them the command.
 - **The demo table** (spec D18): `services/demo-table` plays the server's part in the browser, with sample players who sit down, say hello and play every seat but yours with the engine's planning bot (spec §6.1), on the server's clock and pace. `pnpm dev` plays at live tables on core-api (`services/live-table`, behind the same `TableClientService`); `pnpm demo` plays at the demo table. The top bar's **Demo** buttons add or remove a sample player.
 - **Live tables live in core-api's memory:** `tsx watch` restarts core-api when you save a file there, and every table is gone. Open a new one. To play a live table alone, open its link in three or four tabs: each tab is its own person (its seat is kept in sessionStorage, so a reload gets it back).
 - **A dropped connection** keeps its seat for 20 seconds (`limits.ts`).

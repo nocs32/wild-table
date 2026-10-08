@@ -14,7 +14,7 @@ A card game you play with friends in the browser, on a 3D card table.
 
 It's a sibling of [Felt Table](https://github.com/nocs32/felt-table-jigsaw), the multiplayer jigsaw, [Scribble Table](https://github.com/nocs32/scribble-table), the drawing-and-guessing game, and [Telephone Table](https://github.com/nocs32/telephone-table), the telephone drawing game, and shares their stack, rules and look.
 
-> **Status:** the lobby and the rule book are built (M1), and whole matches play at live tables and at the demo table (M2): rounds on the 3D table with your hand to drag, throw or click, every card and its moment (the Skip stamp, the +4's slam, the Wild's wave, the winning card in slow motion), the house rules, the Last card! race, the fuse along the rail, scores, the pinball machine's podium, sounds, lighter graphics for weak laptops, and bots that play their seats, jump in and stand in for people. Every pull request and every push to `main` runs CI (M3); hosting on wild.timnox.dev comes next.
+> **Status:** the lobby and the rule book are built (M1), and whole matches play at live tables and at the demo table (M2): rounds on the 3D table with your hand to drag, throw or click, every card and its moment (the Skip stamp, the +4's slam, the Wild's wave, the winning card in slow motion), the house rules, the Last card! race, the fuse along the rail, scores, the pinball machine's podium, sounds, lighter graphics for weak laptops, and bots that play their seats, jump in and stand in for people. Every pull request and every push to `main` runs CI (M3), and `pnpm play` hosts game nights at https://wild.timnox.dev (M4).
 
 ## Stack
 
@@ -79,7 +79,7 @@ pnpm play
 - Keep the computer awake while you play. Closing the terminal or restarting wipes the tables, like any server restart.
 - To ship a change, stop `pnpm play` and start it again. It rebuilds from what's checked out.
 
-**One-time setup** on the computer that hosts (done in the hosting milestone, M4; until then `pnpm play` stops at the tunnel): install `cloudflared` (`winget install Cloudflare.cloudflared`), open a new terminal so it's on PATH, then:
+**One-time setup** on the computer that hosts. This PC has it already: the `wild-table` tunnel was created in M4, and wild.timnox.dev points at it. On another computer, install `cloudflared` (`winget install Cloudflare.cloudflared`), open a new terminal so it's on PATH, then:
 
 ```bash
 cloudflared tunnel create wild-table
