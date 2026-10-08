@@ -21,12 +21,13 @@ export interface TableRoomBotsDeps {
   changed: () => void;
 }
 
-const { botThinkMs } = limits.table;
+const { botThinkMs, standInWaitMs } = limits.table;
 
 // The bots (spec D9, §6, §6.1 layer 3). In the lobby, anyone may sit one down in a free seat or send
 // one away, and a person who arrives at a full table takes the newest bot's seat. In a round, a bot
 // plays its own seat, and the seat of anyone who dropped out or ran out of time twice, after a
-// human-ish think (the bell is one of its moves, spec §5.6); and with Jump-in on, it slaps down the
+// human-ish think (the bell is one of its moves, spec §5.6); for someone still at the table, a few
+// seconds more when their turn comes, to take their seat back. With Jump-in on, it slaps down the
 // exact card on top out of turn.
 export class TableRoomBots {
   #thinking: { key: string; cancel: () => void } | null = null;
@@ -119,9 +120,19 @@ export class TableRoomBots {
 
     if (!this.#isBot(seat)) return;
 
-    const delay = botThinkMs.min + random() * (botThinkMs.max - botThinkMs.min);
+    const delay = this.#waitFor(seat, round) + botThinkMs.min + random() * (botThinkMs.max - botThinkMs.min);
 
     this.#thinking = { key, cancel: schedule(() => this.#play(seat), delay) };
+  }
+
+  // Someone a bot stands in for who's still here gets a few seconds when their turn comes (or a +2
+  // or +4 lands on them) to make a move themselves and take their seat back (their prompt says so).
+  // Once the bot has started their turn, it carries on at its own pace.
+  #waitFor(seat: string, round: RoundState): number {
+    const member = this.#deps.members.find(seat);
+    const isStart = round.step.kind === 'play' || round.step.kind === 'answer';
+
+    return member?.bot === false && member.connected && isStart ? standInWaitMs : 0;
   }
 
   #play(seat: string): void {

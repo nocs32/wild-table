@@ -10,7 +10,9 @@ export const enRound = {
   watching: 'You’re watching this round',
   watchingHint: 'You’ll be dealt in at the next one, starting from 0 points.',
   standIn: 'A bot is playing for you',
-  standInHint: 'You ran out of time twice. Play a card or draw and you’re back.',
+  standInHint: 'You ran out of time twice. When your turn comes, play a card or draw and you’re back.',
+  standInTurn: 'Your turn: take your seat back',
+  standInTurnHint: 'A bot moves for you in a few seconds. Make any move yourself now and you’re back.',
   yourTurn: 'Your turn!',
   turn: {
     play: 'Your turn',

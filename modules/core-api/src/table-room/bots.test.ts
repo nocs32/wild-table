@@ -45,3 +45,61 @@ test('a table with room, or without bots, makes no room', () => {
   table.bots.makeRoom();
   expect(table.members.count).toBe(3);
 });
+
+// Where a round stands: whose turn, which step, and how many cards on the pile and in their hand.
+const moment = (table: ReturnType<typeof setUp>): string => {
+  const round = table.cards.round;
+
+  return round ? [round.turn, round.step.kind, round.pile.length, table.cards.cardsOf(round.turn)].join('|') : '';
+};
+
+// Two people, and a bot standing in for whoever's turn it is: they ran out of time twice.
+const standInOnTurn = (): { table: ReturnType<typeof setUp>; seat: string } => {
+  const table = setUp(2);
+
+  table.game.start('p0');
+
+  const seat = table.cards.round?.turn ?? '';
+
+  table.game.match.timedOut(seat);
+  table.game.match.timedOut(seat);
+  table.bots.drive();
+
+  return { table, seat };
+};
+
+test('a bot standing in for someone still here waits a few seconds on their turn, so a move of their own brings them back', () => {
+  const { table, seat } = standInOnTurn();
+  const before = moment(table);
+
+  table.timers.advance(5000);
+  expect(moment(table)).toBe(before);
+
+  table.game.move(seat, { type: 'draw' }, 0);
+  expect(table.game.match.standIns.has(seat)).toBe(false);
+});
+
+test('if they make no move, the bot plays their turn after the wait and its think', () => {
+  const { table } = standInOnTurn();
+  const before = moment(table);
+
+  table.timers.advance(8000);
+  expect(moment(table)).not.toBe(before);
+});
+
+test('a bot standing in for someone who left plays at its usual pace', () => {
+  const table = setUp(2);
+
+  table.game.start('p0');
+
+  const seat = table.cards.round?.turn ?? '';
+
+  table.members.leave(seat);
+  table.game.leave(seat);
+  table.bots.drive();
+
+  const before = moment(table);
+
+  table.timers.advance(3000);
+  expect(moment(table)).not.toBe(before);
+});

@@ -18,6 +18,9 @@ export const limits = {
     roundOverMs: 10_000,
     // How long a bot thinks before its move (spec §6).
     botThinkMs: { min: 1000, max: 3000 },
+    // A bot standing in for someone who's still at the table waits this long more when their turn
+    // comes, so they can take their seat back by making a move themselves (spec D11).
+    standInWaitMs: 5000,
     // Hard cap on messages from one connection; Colyseus disconnects anyone above it.
     maxMessagesPerSecond: 100,
     // Per person and intent: at most `count` in any `windowMs`. Extra messages are refused.

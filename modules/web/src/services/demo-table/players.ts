@@ -3,13 +3,17 @@ import type { DemoMatch } from './match';
 import { DemoPlans } from './plans';
 import type { DemoDeps } from './types';
 
-// How long a bot thinks before its move, as at a live table (core-api `limits.ts`, spec §6).
+// How long a bot thinks before its move, and how much longer it waits when your turn comes while
+// it stands in for you, as at a live table (core-api `limits.ts`, spec §6, D11).
 const thinkMs = { min: 1000, max: 3000 };
+const standInWaitMs = 5000;
 
 export interface DemoPlayersHost {
   match: DemoMatch;
   // A seat played by a bot: a bot, a sample player, or someone a bot stands in for.
   isBot: (seat: string) => boolean;
+  // A seat a bot plays for its person, who's here: you, after running out of time twice.
+  isStandIn: (seat: string) => boolean;
   // A bot moved: everyone needs to hear about it.
   moved: () => void;
 }
@@ -63,9 +67,18 @@ export class DemoPlayers {
     if (!this.#host.isBot(seat)) return;
 
     const { random } = this.#deps;
-    const delay = thinkMs.min + random() * (thinkMs.max - thinkMs.min);
+    const delay = this.#waitFor(seat, round) + thinkMs.min + random() * (thinkMs.max - thinkMs.min);
 
     this.#plans.later('think', delay, () => this.#play(seat));
+  }
+
+  // When your turn comes (or a +2 or +4 lands on you) while a bot stands in for you, it waits a few
+  // seconds for you to make a move yourself and take your seat back. Once it has started your turn,
+  // it carries on at its own pace.
+  #waitFor(seat: string, round: RoundState): number {
+    const isStart = round.step.kind === 'play' || round.step.kind === 'answer';
+
+    return this.#host.isStandIn(seat) && isStart ? standInWaitMs : 0;
   }
 
   #play(seat: string): void {
