@@ -81,11 +81,10 @@ src/
    ├─ members.ts            TableRoomMembers (+ member-names.ts: the names it hands out)
    ├─ feed.ts               TableRoomFeed
    ├─ game.ts               TableRoomGame: the phases, the settings, the turn clock, rounds and the podium
-   ├─ match.ts              TableRoomMatch: who sits where, the scores, stand-ins
+                            (the scores live in the engine's MatchRecord, shared with the demo table)
    ├─ cards.ts              TableRoomCards: the engine's round, changed only by its moves
    ├─ clock.ts              TableRoomClock: one deadline at a time (a turn, the pause after a round)
    ├─ bots.ts               TableRoomBots: lobby seats, then playing bot seats and stand-ins
-   ├─ play-events.ts        the engine's events split into public and private (peeks)
    ├─ view.ts               what's sent: the shared view
    ├─ outbox.ts             TableRoomOutbox (what each person is sent, and when)
    ├─ rate-limits.ts        TableRoomRateLimits

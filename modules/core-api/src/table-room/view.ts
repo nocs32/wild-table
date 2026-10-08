@@ -1,4 +1,4 @@
-import { topCard } from '@wild-table/engine';
+import { roundSnapshot } from '@wild-table/engine';
 import type { GameSnapshot, MatchSnapshot, MemberSnapshot, RoundSnapshot, SeatSnapshot } from '@wild-table/protocol';
 import type { TableRoomCards } from './cards.js';
 import type { TableRoomClock } from './clock.js';
@@ -33,17 +33,7 @@ const roundView = ({ game, cards, clock, now }: TableRoomViewParts): RoundSnapsh
 
   if (game.phase !== 'round' || !round) return null;
 
-  return {
-    top: topCard(round),
-    colour: round.colour,
-    turn: round.turn,
-    step: round.step.kind,
-    direction: round.direction,
-    deckSize: round.deck.length,
-    pendingDraw: round.pendingDraw,
-    race: round.race,
-    endsAt: clock.endsAt ?? now(),
-  };
+  return roundSnapshot(round, clock.endsAt ?? now());
 };
 
 const matchView = (parts: TableRoomViewParts): MatchSnapshot | null => {

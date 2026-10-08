@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { furniture, glow } from './palette';
+import { furniture, glow } from '../palette';
 
 // The pinball machine at the back right: a cabinet with its playfield glowing pink and its
 // backglass lit cyan. Its score display gets the winner's name at the podium (spec §8.1).

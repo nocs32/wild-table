@@ -43,11 +43,10 @@ const listenToEvents = (room: Room, listeners: TableLinkListeners, now: () => nu
   on('view', (message) => view.view(message));
   on('hand', (message) => view.hand(message));
   on('feed', (message) => view.feed(message));
-  // What happened at the table, peeks, hovers and emotes: the round's screens play them (M1).
-  on('play', () => undefined);
-  on('peek', () => undefined);
-  on('hover', () => undefined);
-  on('emote', () => undefined);
+  on('play', ({ events }) => listeners.play(events));
+  on('peek', listeners.peek);
+  on('hover', listeners.hover);
+  on('emote', listeners.emote);
   on('reaction', listeners.reaction);
   on('error', listeners.refused);
 };

@@ -12,6 +12,8 @@ export type {
   AddressService,
   CardArtService,
   ClipboardService,
+  SoundCue,
+  SoundPlay,
   DemoControls,
   DeviceService,
   PreferencesService,

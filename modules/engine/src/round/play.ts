@@ -1,32 +1,31 @@
 // Playing a card, and what each card does (spec §5.3, §5.4, §5.7).
 import { isWild, type Card, type NumberFace } from '@wild-table/protocol';
-import { checkPlay, isFairWild4 } from '../plays.js';
+import { isFairWild4 } from '../plays.js';
+import { playBlock, type PlayBlock, type PlayContext } from './play-now.js';
 import { passHands } from './seven-zero.js';
 import { closeRace, drawCards, handOf, passTurn, roundPoints, seatAfter, topCard } from './table.js';
 import type { MoveError, RoundContext, RoundState, SeatId } from './types.js';
 
-// The exact same card: same colour, and the same number or symbol. Wilds never are (jump-in).
-const isSameCard = (card: Card, other: Card): boolean => {
-  if (isWild(card) || isWild(other) || card.kind !== other.kind || card.colour !== other.colour) return false;
+// What `seat` sees of the round, for the play checks.
+const playContext = (state: RoundState, seat: SeatId): PlayContext => ({
+  seat,
+  hand: handOf(state, seat),
+  turn: state.turn,
+  step: state.step.kind,
+  drawnCardId: state.step.kind === 'drawn' ? state.step.cardId : null,
+  top: topCard(state),
+  colour: state.colour,
+  pendingDraw: state.pendingDraw,
+  rules: state.rules,
+});
 
-  return card.kind !== 'number' || (other.kind === 'number' && card.value === other.value);
-};
-
-// Answering a +2 with a +2, or a +4 with a +4 (the stacking house rule).
-export const isStack = (state: RoundState, card: Card): boolean =>
-  state.rules.stacking && state.pendingDraw > 0 && (card.kind === 'draw2' || card.kind === 'wild4') && card.kind === topCard(state).kind;
+const moveErrors: Record<PlayBlock, MoveError> = { notYourTurn: 'NOT_YOUR_TURN', noMatch: 'DOES_NOT_FIT', notDrawn: 'WRONG_STEP', notNow: 'WRONG_STEP' };
 
 // May `seat` play `card` now? Null when it may, else why not.
 export const playError = (state: RoundState, seat: SeatId, card: Card): MoveError | null => {
-  const { step } = state;
+  const block = playBlock(playContext(state, seat), card);
 
-  if (seat !== state.turn) return state.rules.jumpIn && step.kind === 'play' && isSameCard(card, topCard(state)) ? null : 'NOT_YOUR_TURN';
-
-  if (step.kind === 'play') return checkPlay(card, { card: topCard(state), colour: state.colour }, handOf(state, seat), state.rules).fits ? null : 'DOES_NOT_FIT';
-
-  if (step.kind === 'drawn') return step.cardId === card.id ? null : 'WRONG_STEP';
-
-  return step.kind === 'answer' && isStack(state, card) ? null : 'WRONG_STEP';
+  return block === null ? null : moveErrors[block];
 };
 
 // The victim of a +2 or +4 takes the cards and misses their turn.

@@ -1,13 +1,11 @@
-import { applySettings, roundPoints, settingChanges, type Move, type RoundEvent } from '@wild-table/engine';
+import { applySettings, MatchRecord, publicEvents, roundPoints, settingChanges, type MatchSeatHolder, type Move, type RoundEvent, type RoundPeek } from '@wild-table/engine';
 import { defaultGameSettings, gameLimits, type GamePhase, type GameSettings, type GameSettingsPatch, type PlayEvent } from '@wild-table/protocol';
 import { limits } from '../limits.js';
 import type { TableRoomCards } from './cards.js';
 import type { TableRoomClock } from './clock.js';
 import { TableRoomError } from './error.js';
 import type { TableRoomFeed } from './feed.js';
-import { TableRoomMatch, type TableRoomSeatHolder } from './match.js';
 import type { TableRoomMembers } from './members.js';
-import { sortEvents, type TableRoomPeek } from './play-events.js';
 
 export interface TableRoomGameDeps {
   members: TableRoomMembers;
@@ -27,11 +25,11 @@ const { roundOverMs, raceBeatMs } = limits.table;
 export class TableRoomGame {
   phase: GamePhase = 'lobby';
   settings: GameSettings = { ...defaultGameSettings };
-  readonly match = new TableRoomMatch();
+  readonly match = new MatchRecord();
   // Until then the next player waits, after a Last card! race opens (spec §5.6).
   beatUntil = 0;
   #played: PlayEvent[] = [];
-  #peeks: TableRoomPeek[] = [];
+  #peeks: RoundPeek[] = [];
   readonly #deps: TableRoomGameDeps;
 
   constructor(deps: TableRoomGameDeps) {
@@ -105,7 +103,7 @@ export class TableRoomGame {
     return played;
   }
 
-  drainPeeks(): TableRoomPeek[] {
+  drainPeeks(): RoundPeek[] {
     const peeks = this.#peeks;
 
     this.#peeks = [];
@@ -141,7 +139,7 @@ export class TableRoomGame {
   }
 
   #record(events: readonly RoundEvent[], strength: number): void {
-    const { played, peeks } = sortEvents(events, strength, this.settings.handSize);
+    const { played, peeks } = publicEvents(events, strength, this.settings.handSize);
 
     this.#played = [...this.#played, ...played];
     this.#peeks = [...this.#peeks, ...peeks];
@@ -149,7 +147,7 @@ export class TableRoomGame {
 
   // Everyone at the table now gets a seat: people (reconnecting ones too) and bots, at most six;
   // the newest bots make way for newcomers (spec §4.3, D14).
-  #seatHolders(): TableRoomSeatHolder[] {
+  #seatHolders(): MatchSeatHolder[] {
     const all = this.#deps.members.all.map(({ id, name, color, bot }) => ({ id, name, color, bot }));
 
     while (all.length > gameLimits.maxPlayers) {

@@ -1,4 +1,5 @@
 import { ukBook } from './uk-book';
+import { ukRound } from './uk-round';
 
 // Ukrainian UI strings: the same keys as en.ts. Plural keys need _one, _few, _many and _other.
 // Lines about people use the present tense, so they don't depend on the person's gender.
@@ -84,7 +85,7 @@ export const uk = {
     inviteHint: 'Кожен, хто відкриє посилання, сідає за цей стіл.',
     start: 'Роздати карти',
     startNeedsPlayers: 'Для початку потрібно двоє: додайте бота або когось запросіть.',
-    startSoon: 'Усе готово! Самі карти з’являться на наступному кроці.',
+    startSoon: 'Усе готово! Роздати може будь-хто: партія почнеться для всіх.',
     rulesLink: 'Граєте вперше? Правила за 2 хвилини',
     show: 'Правила столу',
     hide: 'Сховати правила столу',
@@ -107,6 +108,12 @@ export const uk = {
     deckHint: 'Натисніть, щоб перетасувати, або стягніть верхню карту й киньте її',
     cardHint: 'Перетягніть, щоб кинути ще раз, або натисніть, щоб перевернути',
     deckPrompt: 'Поки чекаєте: натисніть на колоду, щоб перетасувати, або візьміть карту й киньте її.',
+    props: {
+      lamp: 'Лампа: натисніть, щоб розгойдати',
+      lava: 'Лава-лампа: натисніть, щоб розворушити',
+      boombox: 'Бумбокс: натисніть, щоб зробити гучніше',
+      pizza: 'Холодна піца: натисніть, щоб підняти кришку',
+    },
   },
   cards: {
     colours: { red: 'Червона', yellow: 'Жовта', green: 'Зелена', blue: 'Синя' },
@@ -119,6 +126,7 @@ export const uk = {
     wild4: 'Дика +4',
   },
   book: ukBook,
+  round: ukRound,
   chat: {
     slowDown: 'Надто швидко: надішліть ще раз за мить.',
     notSent: 'Надто швидко: останнє повідомлення не надіслано.',

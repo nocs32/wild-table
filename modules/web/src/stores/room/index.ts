@@ -1,6 +1,7 @@
 import { personNameMaxLength, type TableErrorEvent, type TableReactionEvent, type TableSnapshot } from '@wild-table/protocol';
 import { makeAutoObservable } from 'mobx';
 import type { DemoControls, Services } from '../../services';
+import type { ArtStore } from '../art';
 import type { LocaleStore, Translate } from '../locale';
 import { NameFieldStore } from '../name-field';
 import type { UiStore } from '../ui';
@@ -24,6 +25,10 @@ const createConnection = (room: RoomStore, services: Services, t: Translate): Ro
       snapshot: (snapshot) => room.receiveSnapshot(snapshot),
       reaction: (event) => room.receiveReaction(event),
       refused: (event) => room.receiveRefusal(event),
+      play: (events) => room.game.receivePlay(events),
+      peek: (event) => room.game.receivePeek(event),
+      hover: (event) => room.game.receiveHover(event),
+      emote: (event) => room.game.emotes.receive(event),
     },
   });
 
@@ -51,7 +56,7 @@ export class RoomStore {
   readonly #services: Services;
   readonly #ui: UiStore;
 
-  constructor(services: Services, locale: LocaleStore, ui: UiStore) {
+  constructor(services: Services, locale: LocaleStore, ui: UiStore, art: ArtStore) {
     const { t } = locale;
     const send: TableSend = (type, message) => this.connection.link?.send(type, message);
 
@@ -59,7 +64,16 @@ export class RoomStore {
     this.#ui = ui;
     this.connection = createConnection(this, services, t);
     this.presence = new RoomPresenceStore({ t });
-    this.game = new RoomGameStore({ t, send });
+
+    this.game = new RoomGameStore({
+      ...services,
+      t,
+      send,
+      art,
+      isTouch: services.device.isTouch,
+      members: () => this.presence.members,
+    });
+
     this.seats = new RoomSeatsStore({ t, presence: this.presence, send, isLobby: () => this.game.state === 'lobby' });
     this.chatPace = new RoomChatPaceStore({ t, now: services.now, schedule: services.schedule });
 
@@ -98,13 +112,15 @@ export class RoomStore {
 
   receiveSnapshot(snapshot: TableSnapshot): void {
     this.presence.receive(snapshot.members, this.connection.meId);
-    this.game.receive(snapshot.game);
+    this.game.receive(snapshot.game, snapshot.hand, this.connection.meId);
     this.feed.receive(snapshot.feed);
   }
 
   // A chat line the table turned down for coming too fast gets a note, instead of vanishing.
   receiveRefusal(event: TableErrorEvent): void {
     if (event.type === 'chat' && event.code === 'RATE_LIMITED') this.chatPace.refuse();
+
+    this.game.receiveRefusal(event.type);
   }
 
   receiveReaction(event: TableReactionEvent): void {

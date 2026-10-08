@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { furniture, glow } from './palette';
+import { furniture, glow } from '../palette';
 
 // The jukebox at the back left: a dark cabinet under a rounded top, its arches glowing pink and
 // amber and its front cyan. Seen as glow and silhouette, so simple shapes do.

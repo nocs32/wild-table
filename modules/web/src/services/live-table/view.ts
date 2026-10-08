@@ -1,7 +1,28 @@
-import { feedMaxItems, type FeedItem, type GameSnapshot, type HandSnapshot, type MemberSnapshot, type TableFeedEvent, type TableSnapshot, type TableViewEvent } from '@wild-table/protocol';
+import {
+  feedMaxItems,
+  type FeedItem,
+  type GameSnapshot,
+  type HandSnapshot,
+  type MatchSnapshot,
+  type MemberSnapshot,
+  type TableFeedEvent,
+  type TableSnapshot,
+  type TableViewEvent,
+} from '@wild-table/protocol';
 
 // Clock samples kept: the best of the recent ones wins.
 const maxSamples = 10;
+
+// The match's deadlines (a turn's end, the next deal), on this browser's clock.
+const localMatch = (match: MatchSnapshot | null, local: (at: number) => number): MatchSnapshot | null => {
+  if (!match) return null;
+
+  return {
+    ...match,
+    round: match.round ? { ...match.round, endsAt: local(match.round.endsAt) } : null,
+    nextAt: match.nextAt === null ? null : local(match.nextAt),
+  };
+};
 
 // Puts the server's view and feed back together into the snapshots the stores read, the same
 // shape the demo table sends. Server times become this browser's times: each view carries the
@@ -52,7 +73,7 @@ export class LiveTableView {
 
     this.#emit({
       members: this.#members,
-      game,
+      game: { ...game, match: localMatch(game.match, local) },
       // Only while a round is being played: between rounds nobody holds cards.
       hand: game.phase === 'round' ? this.#hand : null,
       feed: this.#feed.map((item) => ({ ...item, at: local(item.at) })),

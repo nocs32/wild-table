@@ -60,7 +60,7 @@ export class SoundStore {
     this.#deps.preferences.saveSound({ volume: this.volume, muted: !this.isOn });
     this.#apply();
 
-    if (this.isOn) this.#deps.sounds.chime();
+    if (this.isOn) this.#deps.sounds.play('chime');
   }
 
   #apply(): void {

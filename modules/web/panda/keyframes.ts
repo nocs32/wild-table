@@ -72,6 +72,16 @@ export const keyframes = defineKeyframes({
     '0%, 100%': { boxShadow: '0 5px 0 {colors.action.primaryEdge}, 0 0 0 0 rgba(255, 201, 99, 0)' },
     '50%': { boxShadow: '0 5px 0 {colors.action.primaryEdge}, 0 0 28px 6px rgba(255, 201, 99, 0.45)' },
   },
+  // Something asking to be pressed now: the Last card! sign, a "Last card!" tag.
+  pulse: {
+    '0%, 100%': { transform: 'scale(1)' },
+    '50%': { transform: 'scale(1.07)' },
+  },
+  // Whose turn it is: their place card breathes lamplight.
+  turnGlow: {
+    '0%, 100%': { boxShadow: '0 0 0 3px rgba(255, 201, 99, 0.3), 0 0 14px rgba(255, 201, 99, 0.5)' },
+    '50%': { boxShadow: '0 0 0 3px rgba(255, 201, 99, 0.55), 0 0 26px rgba(255, 201, 99, 0.9)' },
+  },
   // The "NEW!" starburst turning slowly.
   spinSlow: {
     from: { transform: 'rotate(0deg)' },

@@ -1,7 +1,7 @@
 import type { Card, PlayerColor, RoundResult } from '@wild-table/protocol';
 
 // Who sits in a seat, as the round started: kept if they leave mid-round.
-export interface TableRoomSeatHolder {
+export interface MatchSeatHolder {
   id: string;
   name: string;
   color: PlayerColor;
@@ -11,11 +11,12 @@ export interface TableRoomSeatHolder {
 const timeoutsBeforeStandIn = 2;
 
 // A match (spec §4): who sits where this round, the scores, and which seats a bot is playing for
-// their person. Lives from the first deal to the podium.
-export class TableRoomMatch {
+// their person. Lives from the first deal to the podium. Kept by the server and by the demo
+// table's referee alike.
+export class MatchRecord {
   number = 0;
   seats: string[] = [];
-  readonly holders = new Map<string, TableRoomSeatHolder>();
+  readonly holders = new Map<string, MatchSeatHolder>();
   readonly scores = new Map<string, number>();
   // People whose seat a bot is playing: they dropped out, or ran out of time twice in a row.
   readonly standIns = new Set<string>();
@@ -38,7 +39,7 @@ export class TableRoomMatch {
   }
 
   // The next round's seats: newcomers start from 0 points (D14); people who left are gone.
-  nextRound(holders: TableRoomSeatHolder[]): void {
+  nextRound(holders: MatchSeatHolder[]): void {
     const seats = holders.map((holder) => holder.id);
 
     this.number++;

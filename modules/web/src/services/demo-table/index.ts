@@ -17,7 +17,7 @@ const defaultName = 'Curious Fox';
 export const createDemoTable = (deps: DemoDeps): TableClientService => ({
   open: (roomId, name, listeners) => {
     const meId = deps.createId();
-    const referee = new DemoReferee(deps, listeners);
+    const referee = new DemoReferee(deps, listeners, meId);
 
     const link: TableLink = {
       roomId: roomId ?? newRoomId(deps.random),

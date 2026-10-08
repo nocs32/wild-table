@@ -3,7 +3,6 @@ import { autorun } from 'mobx';
 import { useEffect } from 'react';
 import { Plane, Raycaster, Vector2, Vector3 } from 'three';
 import type { TableStore } from '../../../stores/table';
-import { holdHeight } from '../../../stores/table/deck';
 
 // The pointer on the table, outside React: the cursor and tooltip follow what it's over, and while
 // a card is held, every move anywhere on the page is turned into a spot on the table at the held
@@ -22,21 +21,26 @@ export const useRoomTablePointer = (table: TableStore): void => {
 
   useEffect(() => {
     const raycaster = new Raycaster();
-    const plane = new Plane(new Vector3(0, 1, 0), -holdHeight);
+    const plane = new Plane(new Vector3(0, 1, 0), 0);
+    const felt = new Plane(new Vector3(0, 1, 0), 0);
     const hit = new Vector3();
+    const under = new Vector3();
 
     const move = (event: PointerEvent): void => {
       const box = gl.domElement.getBoundingClientRect();
       const pointer = new Vector2(((event.clientX - box.left) / box.width) * 2 - 1, -((event.clientY - box.top) / box.height) * 2 + 1);
 
       raycaster.setFromCamera(pointer, camera);
+      plane.constant = -table.holdHeight;
 
       const point = raycaster.ray.intersectPlane(plane, hit);
+      // The spot on the felt under the pointer: what a card is dropped on.
+      const onFelt = raycaster.ray.intersectPlane(felt, under);
 
-      table.deck.move(event.clientX, event.clientY, point ? { x: point.x, z: point.z } : null, performance.now());
+      table.move(event.clientX, event.clientY, point ? { x: point.x, z: point.z } : null, performance.now(), onFelt ? { x: onFelt.x, z: onFelt.z } : null);
     };
 
-    const release = (): void => table.deck.release();
+    const release = (): void => table.release();
 
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', release);

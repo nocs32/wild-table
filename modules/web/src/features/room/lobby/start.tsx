@@ -21,7 +21,7 @@ export const RoomLobbyStart = observer(function RoomLobbyStart(): ReactElement {
           {t('table.deckPrompt')}
         </RoomLobbyStartPrompt>
       )}
-      <Button tone="primary" size={ui.layout.isCompact ? 'md' : 'lg'} type="button" disabled>
+      <Button tone="primary" size={ui.layout.isCompact ? 'md' : 'lg'} type="button" disabled={!seats.isReady} onClick={room.game.start}>
         <PlayIcon />
         {t('lobby.start')}
       </Button>

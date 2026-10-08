@@ -1,12 +1,21 @@
 import type { ReactElement } from 'react';
 import { AdditiveBlending } from 'three';
+import { furniture, glow } from '../palette';
+import { useNeonTexture, usePanellingTexture } from '../use-textures';
+import { RoomTableRoomBoombox } from './boombox';
+import { RoomTableRoomCouch } from './couch';
+import { RoomTableRoomFloorLamp } from './floor-lamp';
 import { RoomTableRoomJukebox } from './jukebox';
-import { furniture, glow } from './palette';
+import { RoomTableRoomLamp } from './lamp';
+import { RoomTableRoomLava } from './lava';
 import { RoomTableRoomPinball } from './pinball';
-import { useNeonTexture, usePanellingTexture } from './use-textures';
+import { RoomTableRoomPizza } from './pizza';
+import { RoomTableRoomRug } from './rug';
 
-// The basement beyond the lamp's light (spec §8.1): carpet underfoot, walnut panelling at the back
-// with the Wild Table neon sign on it, and the jukebox and the pinball machine glowing in the dark.
+// The basement round the table (spec §8.1): the stained-glass lamp hanging over it, a shag rug
+// under it, walnut panelling at the back with the Wild Table neon sign over a loveseat, the jukebox
+// and the pinball machine glowing in the dark, a standing lamp in the corner, and things to poke
+// while you wait: a boombox, a box of cold pizza and a lava lamp.
 export function RoomTableRoom(): ReactElement {
   const panelling = usePanellingTexture();
   const neon = useNeonTexture();
@@ -25,8 +34,15 @@ export function RoomTableRoom(): ReactElement {
         <planeGeometry args={[2.8, 0.875]} />
         <meshBasicMaterial map={neon} color={glow.sign} transparent blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
       </mesh>
+      <RoomTableRoomRug />
+      <RoomTableRoomCouch />
       <RoomTableRoomJukebox />
       <RoomTableRoomPinball />
+      <RoomTableRoomFloorLamp />
+      <RoomTableRoomLamp />
+      <RoomTableRoomLava />
+      <RoomTableRoomBoombox />
+      <RoomTableRoomPizza />
     </group>
   );
 }

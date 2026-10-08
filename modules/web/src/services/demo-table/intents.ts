@@ -1,4 +1,5 @@
-import type { GameSettingsPatch, TableIntents, TableIntentType } from '@wild-table/protocol';
+import type { Move } from '@wild-table/engine';
+import type { EmoteLine, GameSettingsPatch, TableIntents, TableIntentType } from '@wild-table/protocol';
 
 export type DemoHandlers = { [K in TableIntentType]: (memberId: string, message: TableIntents[K]) => void };
 
@@ -9,13 +10,19 @@ export interface DemoMoves {
   rename: (memberId: string, name: string) => void;
   addBot: (memberId: string) => void;
   removeBot: (memberId: string, botId: string) => void;
+  start: (memberId: string) => void;
+  // A move in the round; `type` is the intent, to say which one a refusal was about.
+  move: (memberId: string, type: TableIntentType, move: Move, strength?: number) => void;
+  emote: (memberId: string, line: EmoteLine) => void;
+  nextRound: (memberId: string) => void;
+  playAgain: (memberId: string) => void;
 }
 
 const ignore = (): void => undefined;
 
-// Each intent and the move that answers it. Reactions matter only to other people, and at the demo
-// table everyone else is a sample player or a bot. The demo sends everything as it changes, so
-// `sync` has nothing to catch up on. The round's intents wait for the round's screens (M1).
+// Each intent and the move that answers it. Reactions and hovers matter only to other people, and
+// at the demo table everyone else is a sample player or a bot. The demo sends everything as it
+// changes, so `sync` has nothing to catch up on.
 export const demoHandlers = (moves: DemoMoves): DemoHandlers => ({
   sync: ignore,
   updateSettings: (id, patch) => moves.updateSettings(id, patch),
@@ -24,17 +31,17 @@ export const demoHandlers = (moves: DemoMoves): DemoHandlers => ({
   rename: (id, { name }) => moves.rename(id, name),
   addBot: (id) => moves.addBot(id),
   removeBot: (id, { memberId }) => moves.removeBot(id, memberId),
-  start: ignore,
-  play: ignore,
-  draw: ignore,
-  keep: ignore,
-  pickColour: ignore,
-  challenge: ignore,
-  take: ignore,
-  swap: ignore,
-  bell: ignore,
+  start: (id) => moves.start(id),
+  play: (id, { cardId, strength }) => moves.move(id, 'play', { type: 'play', cardId }, strength),
+  draw: (id) => moves.move(id, 'draw', { type: 'draw' }),
+  keep: (id) => moves.move(id, 'keep', { type: 'keep' }),
+  pickColour: (id, { colour }) => moves.move(id, 'pickColour', { type: 'pickColour', colour }),
+  challenge: (id) => moves.move(id, 'challenge', { type: 'challenge' }),
+  take: (id) => moves.move(id, 'take', { type: 'take' }),
+  swap: (id, { target }) => moves.move(id, 'swap', { type: 'swap', target }),
+  bell: (id) => moves.move(id, 'bell', { type: 'bell' }),
   hover: ignore,
-  emote: ignore,
-  nextRound: ignore,
-  playAgain: ignore,
+  emote: (id, { line }) => moves.emote(id, line),
+  nextRound: (id) => moves.nextRound(id),
+  playAgain: (id) => moves.playAgain(id),
 });

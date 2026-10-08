@@ -1,6 +1,6 @@
+import type { RoundPeek } from '@wild-table/engine';
 import type { HandSnapshot, PlayEvent, TableEvents } from '@wild-table/protocol';
 import type { TableRoomFeed } from './feed.js';
-import type { TableRoomPeek } from './play-events.js';
 import type { TableRoomView } from './view.js';
 
 type TableRoomOutboxSend = <K extends keyof TableEvents>(memberId: string, type: K, message: TableEvents[K]) => void;
@@ -13,7 +13,7 @@ export interface TableRoomOutboxDeps {
   hand: (memberId: string) => HandSnapshot | null;
   // What happened at the table since the last flush, and the private peeks that came with it.
   drainPlayed: () => PlayEvent[];
-  drainPeeks: () => TableRoomPeek[];
+  drainPeeks: () => RoundPeek[];
   now: () => number;
   send: TableRoomOutboxSend;
   broadcast: <K extends keyof TableEvents>(type: K, message: TableEvents[K]) => void;
