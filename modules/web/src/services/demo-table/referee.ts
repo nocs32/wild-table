@@ -54,7 +54,13 @@ export class DemoReferee implements DemoTableState {
       changed: () => this.#changed(),
     });
 
-    this.#players = new DemoPlayers(deps, { match: this.#match, isBot: (seat) => this.#isBot(seat), moved: () => this.#changed() });
+    this.#players = new DemoPlayers(deps, {
+      match: this.#match,
+      isBot: (seat) => this.#isBot(seat),
+      isStandIn: (seat) => seat === this.#meId && this.#match.record.standIns.has(seat),
+      moved: () => this.#changed(),
+    });
+
     this.#handlers = demoHandlers(this);
   }
 

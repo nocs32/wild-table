@@ -95,7 +95,7 @@ export class RoomGameTurnStore {
 
     if (!match.isSeated) return { title: t('round.watching'), hint: t('round.watchingHint'), isMine: false, actions: [] };
 
-    if (match.me?.standIn) return { title: t('round.standIn'), hint: t('round.standInHint'), isMine: false, actions: [] };
+    if (match.me?.standIn) return this.#standInPrompt();
 
     return match.isMyTurn ? this.#myPrompt() : this.#theirPrompt();
   }
@@ -120,6 +120,18 @@ export class RoomGameTurnStore {
     const last = names.at(-1) ?? '';
 
     return names.length < 2 ? last : `${names.slice(0, -1).join(', ')}${this.#deps.t('round.bell.and')}${last}`;
+  }
+
+  // A bot is playing for you. When your turn comes, it waits a few seconds before it moves: it's
+  // your turn as ever ("Your turn!", the glowing edges, the step's buttons), and any move of your
+  // own takes your seat back. Once the bot has started your turn, it's the bot's.
+  #standInPrompt(): TurnPromptView {
+    const { t, match } = this.#deps;
+    const step = match.round?.step;
+
+    if (match.isMyTurn && (step === 'play' || step === 'answer')) return { ...this.#myPrompt(), title: t('round.standInTurn'), hint: t('round.standInTurnHint') };
+
+    return { title: t('round.standIn'), hint: t('round.standInHint'), isMine: false, actions: [] };
   }
 
   #myPrompt(): TurnPromptView {
