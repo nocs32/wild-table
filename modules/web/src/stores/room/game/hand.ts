@@ -1,16 +1,18 @@
 import { playBlock, type PlayBlock, type PlayContext } from '@wild-table/engine';
-import { isWild, type Card, type CardColour, type HandSnapshot, type HouseRules } from '@wild-table/protocol';
-import { makeAutoObservable } from 'mobx';
+import { isWild, raceBeatMs, type Card, type CardColour, type HandSnapshot, type HouseRules } from '@wild-table/protocol';
+import { computed, makeAutoObservable } from 'mobx';
 import type { Schedule } from '../../../services';
 import type { Translate } from '../../locale';
 import { cardLabel } from '../../rule-book/cards';
 import type { TableSend } from '../types';
+import type { RoomGameClockStore } from './clock';
 import type { RoomGameMatchStore } from './match';
 
 export interface RoomGameHandDeps {
   t: Translate;
   send: TableSend;
   match: RoomGameMatchStore;
+  clock: RoomGameClockStore;
   rules: () => HouseRules;
   schedule: Schedule;
 }
@@ -30,7 +32,8 @@ export class RoomGameHandStore {
 
   constructor(deps: RoomGameHandDeps) {
     this.#deps = deps;
-    makeAutoObservable(this, {}, { autoBind: true });
+    // Read every frame by the 3D hand: kept, not worked out again each time.
+    makeAutoObservable(this, { playableIds: computed({ keepAlive: true }) }, { autoBind: true });
   }
 
   // What you can see of the round, for the rules' checks.
@@ -45,16 +48,29 @@ export class RoomGameHandStore {
     return { seat: match.meId, hand: this.cards, turn, step, drawnCardId: this.drawnCardId, top, colour, pendingDraw, rules: rules() };
   }
 
+  // A Last card! race just opened and is still on: for a moment the table holds back every play but
+  // the racer's (jump-ins too), and the next player's draw, so the race gets its chance (§5.6).
+  get isBeatOn(): boolean {
+    const { match, clock } = this.#deps;
+    const opened = match.raceOpenedAt;
+
+    return opened !== null && (match.round?.race ?? null) !== null && clock.now < opened + raceBeatMs;
+  }
+
+  get isHeldBack(): boolean {
+    return this.isBeatOn && this.#deps.match.round?.race !== this.#deps.match.meId;
+  }
+
   get playableIds(): ReadonlySet<string> {
     const context = this.context;
 
-    return new Set(context ? this.cards.filter((card) => playBlock(context, card) === null).map((card) => card.id) : []);
+    return new Set(context && !this.isHeldBack ? this.cards.filter((card) => playBlock(context, card) === null).map((card) => card.id) : []);
   }
 
   get canDraw(): boolean {
     const step = this.#deps.match.round?.step;
 
-    return this.#deps.match.isMyTurn && (step === 'play' || step === 'answer');
+    return this.#deps.match.isMyTurn && !this.isBeatOn && (step === 'play' || step === 'answer');
   }
 
   // The Last card! bell: anyone during a race, or you on your turn with two cards left (§5.6).
@@ -83,7 +99,13 @@ export class RoomGameHandStore {
   whyNot(cardId: string): string {
     const context = this.context;
     const card = this.find(cardId);
-    const block = context && card ? playBlock(context, card) : 'notYourTurn';
+
+    // It's left your hand (played, or passed on): nothing to say about it.
+    if (!card) return '';
+
+    const block = context ? playBlock(context, card) : 'notYourTurn';
+
+    if (block === null && this.isHeldBack) return this.#deps.t('round.why.raceBeat', { name: this.#deps.match.nameOf(this.#deps.match.round?.race ?? null) });
 
     return block === null || !context ? '' : this.#blockText(block, context);
   }

@@ -86,6 +86,24 @@ export const stepError = (context: RoundContext, seat: SeatId, kind: TurnStep['k
   return context.state.step.kind === kind ? null : 'WRONG_STEP';
 };
 
+// Hands changed places (7-0): whoever now holds a single card is in the Last card! race, the
+// nearest in the order of play after `from` when there are several (spec §5.6, §5.7).
+export const raceAfterSwap = (context: RoundContext, from: SeatId): void => {
+  const { state } = context;
+
+  state.race = null;
+
+  for (let step = 1; step <= state.seats.length; step++) {
+    const seat = seatAfter(state, from, step);
+
+    if (handOf(state, seat).length === 1) {
+      state.race = seat;
+
+      return;
+    }
+  }
+};
+
 // The Last card! race ends, unanswered, once the next player plays or draws (spec §5.6).
 export const closeRace = (context: RoundContext, actor: SeatId): void => {
   if (context.state.race !== null && context.state.race !== actor) context.state.race = null;

@@ -34,7 +34,7 @@ export class TableRoundCardsStore {
 
   constructor() {
     // Only `views` is observable: the rest is read every frame.
-    makeAutoObservable(this, { hand: false, pile: false, seatIds: false }, { autoBind: true });
+    makeAutoObservable(this, { hand: false, pile: false, seatIds: false, seat: false, has: false, body: false, placeOf: false, faceOf: false }, { autoBind: true });
   }
 
   get hand(): readonly string[] {

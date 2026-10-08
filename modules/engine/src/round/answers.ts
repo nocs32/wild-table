@@ -15,7 +15,7 @@ export const pickColour = (context: RoundContext, seat: SeatId, colour: CardColo
   context.events.push({ type: 'colour', seat, colour });
 
   // A wild turned up to start the round: the first player picks, then plays (spec §5.2).
-  if (state.pile.length === 1) {
+  if (state.step.kind === 'pickColour' && state.step.opening) {
     state.step = { kind: 'play' };
     context.events.push({ type: 'turn', seat });
   } else if (topCard(state).kind === 'wild4') {
@@ -49,7 +49,7 @@ export const challenge = (context: RoundContext, seat: SeatId): MoveError | null
 
   if (!wild4 || state.rules.wild4AnyTime || topCard(state).kind !== 'wild4') return 'WRONG_STEP';
 
-  context.events.push({ type: 'challenged', seat, against: wild4.seat, bluff: wild4.bluff, hand: [...handOf(state, wild4.seat)] });
+  context.events.push({ type: 'challenged', seat, against: wild4.seat, bluff: wild4.bluff, hand: wild4.hand });
   state.wild4 = null;
 
   if (wild4.bluff) {

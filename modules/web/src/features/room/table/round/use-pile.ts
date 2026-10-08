@@ -16,7 +16,7 @@ const slapMs = 450;
 const waveMs = 900;
 
 // The middle of the table, every frame (spec §8.1, §8.2): the arrow ring turns slowly the way play
-// goes, and spins round when a Reverse flips it; the glow of the colour in play breathes; a slap
+// goes, and when a Reverse comes it spins round and flips over, so its arrows point the new way; the glow of the colour in play breathes; a slap
 // sends a ring of air out across the felt, harder for a harder throw; and a Wild sends a wave of
 // its colour.
 export const useRoomTableRoundPile = (round: TableRoundStore): RoomTableRoundPileRefs => {
@@ -24,6 +24,8 @@ export const useRoomTableRoundPile = (round: TableRoundStore): RoomTableRoundPil
   const glow = useRef<Mesh>(null);
   const wave = useRef<Mesh>(null);
   const speed = useRef(new Spring(0.25, 40, 9));
+  // 1: the arrows point clockwise (play goes from you to your left); -1: mirrored, anticlockwise.
+  const flip = useRef(new Spring(round.direction, 60, 11));
 
   useFrame(({ clock }, dt) => {
     const now = performance.now();
@@ -32,8 +34,13 @@ export const useRoomTableRoundPile = (round: TableRoundStore): RoomTableRoundPil
 
     speed.current.target = direction * (spinning ? 6 : 0.25);
     speed.current.step(dt);
+    flip.current.target = direction;
+    flip.current.step(dt);
 
-    if (ring.current) ring.current.rotation.y -= speed.current.value * dt;
+    if (ring.current) {
+      ring.current.rotation.y -= speed.current.value * dt;
+      ring.current.scale.x = flip.current.value;
+    }
 
     const tint = round.colour ? suitGlow[round.colour] : glowing.card;
 

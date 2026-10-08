@@ -6,7 +6,7 @@ import type { TableStore } from '../../../stores/table';
 
 // The pointer on the table, outside React: the cursor and tooltip follow what it's over, and while
 // a card is held, every move anywhere on the page is turned into a spot on the table at the held
-// card's height. Letting go anywhere lets go of the card.
+// card's height. Letting go anywhere lets go of the card; a gesture the system cuts off plays nothing.
 export const useRoomTablePointer = (table: TableStore): void => {
   const { camera, gl } = useThree();
 
@@ -41,15 +41,18 @@ export const useRoomTablePointer = (table: TableStore): void => {
     };
 
     const release = (): void => table.release();
+    const cancel = (): void => table.cancel();
 
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', release);
-    window.addEventListener('pointercancel', release);
+    window.addEventListener('pointercancel', cancel);
+    window.addEventListener('blur', cancel);
 
     return () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', release);
-      window.removeEventListener('pointercancel', release);
+      window.removeEventListener('pointercancel', cancel);
+      window.removeEventListener('blur', cancel);
     };
   }, [camera, gl, table]);
 };

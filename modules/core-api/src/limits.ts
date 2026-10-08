@@ -1,4 +1,4 @@
-import { gameLimits, type TableIntentType } from '@wild-table/protocol';
+import { gameLimits, raceBeatMs, type TableIntentType } from '@wild-table/protocol';
 
 export interface Rate {
   count: number;
@@ -17,7 +17,7 @@ export const limits = {
     // The scores show this long after a round, unless someone presses Next round (spec §4.3).
     roundOverMs: 10_000,
     // After a Last card! race opens, the next player's turn waits this long (spec §5.6).
-    raceBeatMs: 1500,
+    raceBeatMs,
     // How long a bot thinks before its move (spec §6).
     botThinkMs: { min: 1000, max: 3000 },
     // Hard cap on messages from one connection; Colyseus disconnects anyone above it.

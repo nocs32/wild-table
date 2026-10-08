@@ -1,6 +1,6 @@
 import { useThree } from '@react-three/fiber';
-import { useLayoutEffect } from 'react';
-import type { PerspectiveCamera } from 'three';
+import { useLayoutEffect, useRef, type RefObject } from 'react';
+import { Vector3, type PerspectiveCamera } from 'three';
 
 // How far the table reaches, rail and all, from its middle: the camera keeps all of it in view.
 const reach = { width: 2.15, depth: 1.5 };
@@ -20,9 +20,10 @@ export interface RoomTableCameraInsets {
 
 // Frames the table in the part of the screen that's left free, backing off on narrow screens and
 // coming closer on wide ones. When the free part isn't in the middle, the view is shifted so the
-// table's centre is in the middle of what's free.
-export const useRoomTableCamera = ({ left, right, bottomShare, margin }: RoomTableCameraInsets): void => {
+// table's centre is in the middle of what's free. Gives back where the camera stands, for the shake.
+export const useRoomTableCamera = ({ left, right, bottomShare, margin }: RoomTableCameraInsets): RefObject<Vector3> => {
   const { camera, size } = useThree();
+  const base = useRef(new Vector3());
 
   useLayoutEffect(() => {
     const lens = camera as PerspectiveCamera;
@@ -38,10 +39,13 @@ export const useRoomTableCamera = ({ left, right, bottomShare, margin }: RoomTab
 
     lens.position.set(0, lookAt.y + Math.sin(pitch) * distance, lookAt.z + Math.cos(pitch) * distance);
     lens.lookAt(0, lookAt.y, lookAt.z);
+    base.current.copy(lens.position);
 
     if (shift.x === 0 && shift.y === 0) lens.clearViewOffset();
     else lens.setViewOffset(size.width + Math.abs(shift.x) * 2, frameHeight, Math.abs(shift.x) - shift.x, bottom, size.width, size.height);
 
     lens.updateProjectionMatrix();
   }, [camera, size.width, size.height, left, right, bottomShare, margin]);
+
+  return base;
 };

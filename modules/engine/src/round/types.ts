@@ -11,8 +11,8 @@ export type TurnStep =
   | { kind: 'play' }
   // Drew a card that fits: play it, or keep it.
   | { kind: 'drawn'; cardId: string }
-  // Played a wild: pick the colour in play.
-  | { kind: 'pickColour' }
+  // Played a wild, or one was turned up to start the round (`opening`): pick the colour in play.
+  | { kind: 'pickColour'; opening: boolean }
   // Hit by a +2 or a +4 with a choice: stack another (house rule), challenge a +4, or take the cards.
   | { kind: 'answer' }
   // Played a 7 with the 7-0 house rule: pick whose hand to swap with.
@@ -33,8 +33,9 @@ export interface RoundState {
   step: TurnStep;
   // Cards waiting for the victim of a +2 or +4 (stacking adds them up).
   pendingDraw: number;
-  // The last Wild +4, for a challenge: who played it, and whether it was a bluff.
-  wild4: { seat: SeatId; bluff: boolean } | null;
+  // The last Wild +4, for a challenge: who played it, whether it was a bluff, the colour in play
+  // it was played on, and the hand they held then (what the challenger gets to see).
+  wild4: { seat: SeatId; bluff: boolean; colour: CardColour; hand: Card[] } | null;
   // The Last card! race (spec §5.6): open while this seat is down to one card and nobody has hit
   // the bell yet.
   race: SeatId | null;

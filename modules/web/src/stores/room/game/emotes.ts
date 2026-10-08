@@ -1,6 +1,6 @@
 import { emoteLines, type EmoteLine, type TableEmoteEvent } from '@wild-table/protocol';
 import { makeAutoObservable } from 'mobx';
-import type { Schedule } from '../../../services';
+import type { Schedule, SoundsService } from '../../../services';
 import type { Translate } from '../../locale';
 import type { TableSend } from '../types';
 
@@ -9,6 +9,7 @@ export interface RoomGameEmotesDeps {
   send: TableSend;
   schedule: Schedule;
   now: () => number;
+  sounds: SoundsService;
 }
 
 export interface EmoteOptionView {
@@ -19,9 +20,11 @@ export interface EmoteOptionView {
 // The table allows one emote every 3 seconds (spec §10.5).
 const paceMs = 3000;
 const bubbleMs = 2600;
+// Each line pops up in a voice of its own: higher for a cheery hello, lower for a sly mwahaha.
+const lineRates: Record<EmoteLine, number> = { hello: 1.08, wellPlayed: 1, oops: 1.2, sorry: 0.9, hurry: 1.3, mwahaha: 0.78 };
 
 // Emotes (spec §7): click your own portrait for a wheel of lines, each shown as a speech bubble at
-// your seat. Click someone else's portrait to mute theirs. The wheel is closed ⇄ open.
+// your seat, with a pop. Click someone else's portrait to mute theirs. The wheel is closed ⇄ open.
 export class RoomGameEmotesStore {
   state: 'closed' | 'open' = 'closed';
   // The line in each seat's speech bubble right now.
@@ -83,6 +86,7 @@ export class RoomGameEmotesStore {
     if (this.muted.has(seat)) return;
 
     this.bubbles = new Map(this.bubbles).set(seat, line);
+    this.#deps.sounds.play('pop', { rate: lineRates[line] });
     this.#deps.schedule(() => this.#fade(seat, line), bubbleMs);
   }
 

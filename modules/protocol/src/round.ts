@@ -35,6 +35,9 @@ export interface RoundSnapshot {
   pendingDraw: number;
   // Whose Last card! race is open, if anyone's (§5.6).
   race: string | null;
+  // While a Wild +4 waits for an answer: the colour in play it was played on. A challenge asks
+  // whether its player held that colour (§5.5).
+  challengeColour: CardColour | null;
   // When the turn's time runs out, on the server's clock.
   endsAt: number;
 }
@@ -73,7 +76,8 @@ export type PlayEvent =
   | { type: 'handsPassed'; direction: 1 | -1 }
   | { type: 'bell'; seat: string; result: 'safe' | 'early' | 'caught'; caught: string | null }
   | { type: 'reshuffled' }
-  | { type: 'timedOut'; seat: string }
+  // Out of time at this step: the table made the move for them (draw, keep, pick, take or swap).
+  | { type: 'timedOut'; seat: string; step: TurnStepKind }
   | { type: 'roundOver'; winner: string; points: number };
 
 // The emote wheel's lines (spec §7): picked from your own portrait, shown in a speech bubble.

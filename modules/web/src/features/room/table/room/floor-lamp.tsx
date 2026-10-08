@@ -2,11 +2,11 @@ import type { ReactElement } from 'react';
 import { DoubleSide } from 'three';
 import { furniture, glow } from '../palette';
 
-// A standing lamp with a fringed shade between the table and the pinball machine, throwing a warm
+// A standing lamp with a fringed shade beside the pinball machine (clear of its display), throwing a warm
 // pool of light into the corner (spec §8.1).
 export function RoomTableRoomFloorLamp(): ReactElement {
   return (
-    <group position={[1.85, -0.82, -2.05]}>
+    <group position={[2.9, -0.82, -2.3]}>
       <mesh position={[0, 0.02, 0]}>
         <cylinderGeometry args={[0.16, 0.18, 0.04, 24]} />
         <meshStandardMaterial color={furniture.brass} metalness={0.8} roughness={0.35} />

@@ -26,7 +26,8 @@ export const createDemoTable = (deps: DemoDeps): TableClientService => ({
         addPlayer: () => referee.addSample(),
         removePlayer: () => referee.removeSample(),
       },
-      send: (type, message) => referee.handle(meId, type, message),
+      // A moment later, as over a network: the browser never hears back in the middle of sending.
+      send: (type, message) => void deps.schedule(() => referee.handle(meId, type, message), 0),
       close: () => referee.dispose(),
     };
 

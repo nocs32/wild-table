@@ -160,13 +160,18 @@ export const en = {
     more: 'More emoji',
   },
   sound: {
-    buttonOn: 'Sound settings: on',
-    buttonOff: 'Sound settings: muted',
-    title: 'Sound',
+    buttonOn: 'Sound and graphics: sound on',
+    buttonOff: 'Sound and graphics: sound muted',
+    title: 'Sound and graphics',
     game: 'Game sounds',
     hint: 'A chime when it’s your turn, and the sounds of the cards and the room',
     volume: 'Volume',
     percent: '{{value}}%',
+  },
+  graphics: {
+    light: 'Lighter graphics',
+    hint: 'No shadows or glow: smoother on older laptops and phones. It switches on by itself if the game stutters.',
+    dropped: 'The game was stuttering, so the graphics are lighter now: no shadows or glow. Change it under the speaker at the top.',
   },
   picker: {
     search: 'Search emoji',

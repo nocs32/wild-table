@@ -1,4 +1,4 @@
-import type { GamePhase, GameSnapshot, HandSnapshot, MemberSnapshot, PlayEvent, TableHoverEvent, TableIntentType, TablePeekEvent } from '@wild-table/protocol';
+import type { GamePhase, GameSnapshot, HandSnapshot, MemberSnapshot, PlayEvent, TableErrorCode, TableHoverEvent, TableIntentType, TablePeekEvent } from '@wild-table/protocol';
 import { makeAutoObservable, reaction } from 'mobx';
 import type { Schedule, SoundsService } from '../../../services';
 import type { ArtStore } from '../../art';
@@ -21,9 +21,14 @@ export interface RoomGameDeps {
   repeat: Schedule;
   now: () => number;
   isTouch: () => boolean;
+  // Connected to the table: the turn's sounds stop while it's lost.
+  isLive: () => boolean;
   members: () => readonly MemberSnapshot[];
   sounds: SoundsService;
 }
+
+// Refusals that mean the table moved on before a move got there (someone else was faster).
+const lateCodes: ReadonlySet<TableErrorCode> = new Set(['NOT_YOUR_TURN', 'DOES_NOT_FIT', 'WRONG_STEP', 'NOT_IN_HAND']);
 
 // Hears about what just happened at the table (the 3D table plays it), and about moves the table
 // turned down (a card sent to the pile goes back to the hand).
@@ -57,15 +62,15 @@ export class RoomGameStore {
     this.#send = send;
     this.#t = t;
     this.settings = new RoomGameSettingsStore({ t, send, isEditable: () => this.state === 'lobby' });
-    this.match = new RoomGameMatchStore({ t, members: deps.members });
+    this.match = new RoomGameMatchStore({ t, members: deps.members, now: deps.now });
     this.clock = new RoomGameClockStore({ now: deps.now, repeat: deps.repeat });
-    this.hand = new RoomGameHandStore({ t, send, match: this.match, rules, schedule });
+    this.hand = new RoomGameHandStore({ t, send, match: this.match, clock: this.clock, rules, schedule });
     this.turn = new RoomGameTurnStore({ t, match: this.match, hand: this.hand, clock: this.clock, canChallenge: () => !rules().wild4AnyTime, isTouch: deps.isTouch });
     this.captions = new RoomGameCaptionsStore({ t, art, match: this.match, schedule, seatCount: () => this.match.seats.length, rules });
     this.result = new RoomGameResultStore({ t, art, send, match: this.match, clock: this.clock, targetScore: () => this.settings.targetScore });
-    this.emotes = new RoomGameEmotesStore({ t, send, schedule, now: deps.now });
+    this.emotes = new RoomGameEmotesStore({ t, send, schedule, now: deps.now, sounds: deps.sounds });
     makeAutoObservable(this, {}, { autoBind: true });
-    this.#listenForSounds(deps.sounds);
+    this.#listenForSounds(deps.sounds, deps.isLive);
   }
 
   get isLobby(): boolean {
@@ -85,7 +90,10 @@ export class RoomGameStore {
     if (game.phase === 'round' || game.phase === 'roundOver') this.clock.start();
     else this.clock.stop();
 
-    if (game.phase === 'lobby') this.captions.clear();
+    if (game.phase === 'lobby') {
+      this.captions.clear();
+      this.emotes.setOpen(false);
+    }
   }
 
   receivePlay(events: readonly PlayEvent[]): void {
@@ -93,8 +101,10 @@ export class RoomGameStore {
     this.#listeners.forEach((listener) => listener.played(events));
   }
 
-  receiveRefusal(type: TableIntentType): void {
+  // A move the table turned down: the card comes back, and a line says why (spec D7).
+  receiveRefusal(type: TableIntentType, code: TableErrorCode): void {
     this.#listeners.forEach((listener) => listener.refused(type));
+    this.captions.why(this.#refusalText(type, code));
   }
 
   receiveHover(event: TableHoverEvent): void {
@@ -126,14 +136,14 @@ export class RoomGameStore {
 
   // The turn's sounds (spec §7): a chime when it's your turn, the fuse hissing while it burns, and
   // the pinball machine's jackpot when a round is won (and louder for the match).
-  #listenForSounds(sounds: SoundsService): void {
+  #listenForSounds(sounds: SoundsService, isLive: () => boolean): void {
     reaction(
       () => this.isPlaying && this.match.isMyTurn,
       (mine) => mine && sounds.play('chime'),
     );
 
     reaction(
-      () => this.isPlaying && this.turn.isBurning,
+      () => this.isPlaying && this.turn.isBurning && isLive(),
       (burning) => {
         this.#stopFuse?.();
         this.#stopFuse = burning ? sounds.loop('fuse') : null;
@@ -147,6 +157,16 @@ export class RoomGameStore {
         else if (state === 'podium') sounds.play('jackpot');
       },
     );
+  }
+
+  #refusalText(type: TableIntentType, code: TableErrorCode): string {
+    const t = this.#t;
+
+    if (code === 'TOO_SOON') return t('round.refused.tooSoon');
+
+    if (type === 'bell' && code === 'NO_RACE') return t('round.refused.bell');
+
+    return lateCodes.has(code) && type !== 'hover' ? t('round.refused.late') : '';
   }
 
   get #isSwapping(): boolean {

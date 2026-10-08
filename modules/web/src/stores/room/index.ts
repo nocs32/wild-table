@@ -71,6 +71,7 @@ export class RoomStore {
       send,
       art,
       isTouch: services.device.isTouch,
+      isLive: () => this.connection.state === 'live',
       members: () => this.presence.members,
     });
 
@@ -120,7 +121,7 @@ export class RoomStore {
   receiveRefusal(event: TableErrorEvent): void {
     if (event.type === 'chat' && event.code === 'RATE_LIMITED') this.chatPace.refuse();
 
-    this.game.receiveRefusal(event.type);
+    this.game.receiveRefusal(event.type, event.code);
   }
 
   receiveReaction(event: TableReactionEvent): void {

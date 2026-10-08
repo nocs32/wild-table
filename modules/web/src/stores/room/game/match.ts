@@ -29,6 +29,7 @@ export interface RoomGameMatchDeps {
   t: Translate;
   // Who's at the table: bots are marked there.
   members: () => readonly MemberSnapshot[];
+  now: () => number;
 }
 
 const arc = { from: 70, to: 290 };
@@ -41,6 +42,8 @@ export class RoomGameMatchStore {
   // Which card each other player's pointer is over, by its place in their hand (spec §8). Read by
   // the 3D table every frame, not shown through React.
   readonly hovers = new Map<string, number>();
+  // When the Last card! race now open began, on this browser's clock (spec §5.6).
+  raceOpenedAt: number | null = null;
   readonly #deps: RoomGameMatchDeps;
 
   constructor(deps: RoomGameMatchDeps) {
@@ -101,6 +104,11 @@ export class RoomGameMatchStore {
   }
 
   receive(match: MatchSnapshot | null, meId: string): void {
+    const race = match?.round?.race ?? null;
+
+    if (race === null) this.raceOpenedAt = null;
+    else if (race !== this.round?.race) this.raceOpenedAt = this.#deps.now();
+
     this.snapshot = match;
     this.meId = meId;
 

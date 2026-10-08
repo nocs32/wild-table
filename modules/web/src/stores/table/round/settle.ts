@@ -52,13 +52,13 @@ const yourCards = (game: RoomGameStore): readonly Card[] => {
 };
 
 const settleHand = (round: TableRoundStore, game: RoomGameStore): void => {
-  const { cards, pending } = round;
+  const { cards } = round;
   const mine = sorted(yourCards(game));
   const ids = mine.map((card) => card.id);
 
   mine.filter((card) => !cards.has(card.id)).forEach((card) => cards.add(card.id, card, { kind: 'hand' }, deckCardSpot(round.deckSize)));
-  mine.filter((card) => cards.placeOf(card.id)?.kind === 'pile' && !pending.has(card.id)).forEach((card) => cards.move(card.id, { kind: 'hand' }));
-  cards.hand.filter((id) => !ids.includes(id) && !pending.has(id)).forEach((id) => cards.remove(id));
+  mine.filter((card) => cards.placeOf(card.id)?.kind === 'pile' && !round.isPending(card.id)).forEach((card) => cards.move(card.id, { kind: 'hand' }));
+  cards.hand.filter((id) => !ids.includes(id) && !round.isPending(id)).forEach((id) => cards.remove(id));
   cards.orderHand(ids);
 
   // A card you'd picked that can't be played any more drops back.
@@ -88,7 +88,7 @@ const settleSeats = (round: TableRoundStore, game: RoomGameStore, match: MatchSn
 const settlePile = (round: TableRoundStore, top: Card): void => {
   const { cards } = round;
 
-  if (cards.placeOf(top.id)?.kind === 'pile') return;
+  if (cards.pile.at(-1) === top.id) return;
 
   if (cards.has(top.id)) cards.move(top.id, { kind: 'pile' });
   else cards.add(top.id, top, { kind: 'pile' }, { ...pileCardSpot(top.id, cards.pile.length), y: 0.5 });
@@ -109,7 +109,8 @@ export const settleCards = (round: TableRoundStore, game: RoomGameStore): void =
   const live = match.round;
 
   if (live) {
-    round.colour = live.colour;
+    // A Wild waiting for its colour has none yet.
+    round.colour = isWild(live.top) && live.step === 'pickColour' ? null : live.colour;
     round.direction = live.direction;
     round.deckSize = live.deckSize;
     settlePile(round, live.top);

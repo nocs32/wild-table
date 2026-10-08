@@ -24,6 +24,14 @@ export const keyframes = defineKeyframes({
     from: { transform: 'translateX(-10px) rotate(-12deg)' },
     to: { transform: 'translateX(10px) rotate(12deg)' },
   },
+  // A Skip's stamp slams onto a place card, sits there, and lifts off. Straight, never tilted.
+  stampIn: {
+    '0%': { transform: 'translate(-50%, -50%) scale(2.6)', opacity: '0' },
+    '12%': { transform: 'translate(-50%, -50%) scale(0.92)', opacity: '1' },
+    '20%': { transform: 'translate(-50%, -50%) scale(1)', opacity: '1' },
+    '82%': { transform: 'translate(-50%, -50%) scale(1)', opacity: '1' },
+    '100%': { transform: 'translate(-50%, -50%) scale(1.06)', opacity: '0' },
+  },
   // A count that just changed.
   pop: {
     '0%': { transform: 'scale(1)' },

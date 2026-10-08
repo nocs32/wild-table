@@ -88,7 +88,7 @@ test('out of time: the turn passes; twice in a row and a bot plays the seat unti
 
   table.game.drainPlayed();
   table.timers.advance(20_000);
-  expect(table.game.drainPlayed()[0]).toEqual({ type: 'timedOut', seat: sleepy });
+  expect(table.game.drainPlayed()[0]).toEqual(expect.objectContaining({ type: 'timedOut', seat: sleepy }));
   expect(table.game.match.standIns.has(sleepy)).toBe(false);
 
   table.game.match.timedOut(sleepy);

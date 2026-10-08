@@ -113,6 +113,8 @@ export class RoomGameTurnStore {
       case 'swap':
         return mine(t('round.turn.swap'), t('round.turn.swapHint'), this.#swapActions());
       default:
+        if (hand.isHeldBack) return mine(t('round.turn.raceBeat'), t('round.turn.raceBeatHint', { name: match.nameOf(round?.race ?? null) }));
+
         return mine(t('round.turn.play'), t(this.#deps.isTouch() ? 'round.turn.playHintTouch' : 'round.turn.playHint'));
     }
   }
@@ -126,7 +128,9 @@ export class RoomGameTurnStore {
 
     if (round?.top.kind !== 'wild4') return { title: t('round.turn.hit2'), hint: t('round.turn.hit2Hint', { count }), isMine: true, actions: [take] };
 
-    const hint = canChallenge() ? t('round.turn.hit4Hint', { count, colour: t(`cards.colourNames.${round.colour}`), penalty: count + 2 }) : t('round.turn.hit4NoChallenge', { count });
+    // The colour in play the +4 went down on: did they hold any of it?
+    const colour = t(`cards.colourNames.${round.challengeColour ?? round.colour}`);
+    const hint = canChallenge() ? t('round.turn.hit4Hint', { count, colour, penalty: count + 2 }) : t('round.turn.hit4NoChallenge', { count });
     const challenge: TurnActionView = { key: 'challenge', label: t('round.actions.challenge'), tone: 'primary', run: hand.challenge };
 
     return { title: t('round.turn.hit4'), hint, isMine: true, actions: canChallenge() ? [challenge, take] : [take] };

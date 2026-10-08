@@ -17,7 +17,7 @@ const copyRound = (state: RoundState): RoundState => ({
   deck: [...state.deck],
   pile: [...state.pile],
   step: { ...state.step },
-  wild4: state.wild4 && { ...state.wild4 },
+  wild4: state.wild4 && { ...state.wild4, hand: [...state.wild4.hand] },
   rules: { ...state.rules },
 });
 

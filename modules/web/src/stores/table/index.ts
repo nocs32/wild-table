@@ -1,4 +1,4 @@
-import type { HouseRule } from '@wild-table/protocol';
+import type { CardColour, HouseRule } from '@wild-table/protocol';
 import { makeAutoObservable } from 'mobx';
 import type { Schedule, SoundCue, SoundsService } from '../../services';
 import type { Translate } from '../locale';
@@ -32,7 +32,7 @@ export interface TablePoke {
 }
 
 // What the pointer is over on the table: in the lobby, the deck's cards, the leaflet and the tent
-// cards; in a round, a card in your hand, the deck, the pile and the Last card! bell.
+// cards; in a round, a card in your hand, the deck, the pile, the Last card! bell and the colour orbs.
 export type TableHover =
   | { kind: 'card'; id: number }
   | { kind: 'leaflet' }
@@ -41,6 +41,7 @@ export type TableHover =
   | { kind: 'roundDeck' }
   | { kind: 'pile' }
   | { kind: 'bell' }
+  | { kind: 'orb'; colour: CardColour }
   | { kind: 'prop'; prop: TableProp };
 
 const sameTarget = (one: TableHover, other: TableHover): boolean => {
@@ -51,6 +52,8 @@ const sameTarget = (one: TableHover, other: TableHover): boolean => {
   if (one.kind === 'tent' && other.kind === 'tent') return one.rule === other.rule;
 
   if (one.kind === 'prop' && other.kind === 'prop') return one.prop === other.prop;
+
+  if (one.kind === 'orb' && other.kind === 'orb') return one.colour === other.colour;
 
   return one.kind === other.kind;
 };
@@ -67,6 +70,8 @@ export class TableStore {
   insetRight = 0;
   // Read every frame by the props' animations.
   readonly pokes = new Map<TableProp, TablePoke>();
+  // How far the hanging lamp swings (radians), written every frame by the lamp: its light follows.
+  readonly sway = { lamp: 0 };
   readonly #t: Translate;
   readonly #now: () => number;
   readonly #sounds: SoundsService;
@@ -79,7 +84,7 @@ export class TableStore {
     this.#sounds = deps.sounds;
     this.deck = new TableDeckStore(deps);
     this.round = new TableRoundStore({ game: deps.game, schedule: deps.schedule, sounds: deps.sounds });
-    makeAutoObservable(this, { deck: false, round: false, pokes: false }, { autoBind: true });
+    makeAutoObservable(this, { deck: false, round: false, pokes: false, sway: false }, { autoBind: true });
   }
 
   // In a round your hand covers this share of the bottom of the view: the table moves up out of its way.
@@ -87,9 +92,27 @@ export class TableStore {
     return this.round.isShown ? 0.12 : 0;
   }
 
-  // Room left round the table in view: in a round the camera comes in close.
+  // Room left round the table in view: in a round the camera comes in close. At the podium it backs
+  // off again, so the pinball machine scrolling the winner's name is in view.
   get cameraMargin(): number {
+    if (this.isJackpot) return 1.8;
+
     return this.round.isShown ? 0.2 : 0.9;
+  }
+
+  // What the pinball machine's score display scrolls (spec §8.1): who won the round, or the match.
+  // Empty: it shows the game's name.
+  get pinballLine(): string {
+    const { state, result } = this.#game;
+
+    if (state === 'podium') return result.championTitle;
+
+    return state === 'roundOver' ? `${result.title} ${result.pointsLabel}` : '';
+  }
+
+  // The match is won: the pinball machine goes off like a jackpot.
+  get isJackpot(): boolean {
+    return this.#game.state === 'podium';
   }
 
   // The height a held card floats at: the pointer is followed on that plane.
@@ -160,6 +183,12 @@ export class TableStore {
     this.deck.release();
   }
 
+  // The pointer was taken away mid-gesture: nothing gets played.
+  cancel(): void {
+    this.round.hand.cancel();
+    this.deck.release();
+  }
+
   setInsets(left: number, right: number): void {
     this.insetLeft = Math.max(0, Math.round(left));
     this.insetRight = Math.max(0, Math.round(right));
@@ -195,6 +224,8 @@ export class TableStore {
         return t('round.table.pileHint');
       case 'bell':
         return turn.bellLine || t('round.table.bellHint');
+      case 'orb':
+        return t('round.table.orbHint', { colour: t(`cards.colours.${hovered.colour}`) });
       default:
         return hovered.kind === 'leaflet' ? t('table.leafletHint') : '';
     }

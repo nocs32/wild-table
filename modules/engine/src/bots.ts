@@ -99,6 +99,14 @@ export const plannedMove = (view: SeatView, moves: readonly Move[], random: () =
 export const botMove = (level: BotLevel, view: SeatView, moves: readonly Move[], random: () => number): Move | null =>
   level === 'random' ? randomMove(moves, random) : plannedMove(view, moves, random);
 
+// When a bot jumps in, in milliseconds, or null when it can't or won't (spec §5.7): holding the
+// exact card on top out of turn, it slaps it down most of the time, after a moment's look.
+export const botJumpInDelay = (view: SeatView, moves: readonly Move[], random: () => number): number | null => {
+  if (view.turn === view.seat || !moves.some((move) => move.type === 'play')) return null;
+
+  return random() < 0.75 ? 700 + random() * 1000 : null;
+};
+
 // When a bot hits the Last card! bell, in milliseconds, or null when it doesn't (spec §6): almost
 // always for its own last card, a little slower and only sometimes to catch someone else, so
 // people can win the race.

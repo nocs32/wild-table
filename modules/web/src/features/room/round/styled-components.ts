@@ -123,8 +123,16 @@ export const RoomRoundTurnColour = styled('button', {
 });
 
 // What just happened, a line at a time (spec D7), under the prompt.
+// Under the turn's prompt; on a wide screen, in the top right corner over the pinball machine, so
+// the player across the table stays in view.
 export const RoomRoundCaptionsList = styled('ul', {
-  base: { display: 'grid', justifyItems: 'center', gap: '6px', width: 'min(560px, 100%)' },
+  base: {
+    display: 'grid',
+    justifyItems: 'center',
+    gap: '6px',
+    width: 'min(560px, 100%)',
+    '@media (min-width: 1200px)': { position: 'absolute', top: '10px', right: '14px', width: '300px', justifyItems: 'end' },
+  },
 });
 
 export const RoomRoundCaptionsItemRoot = styled('li', {
@@ -158,43 +166,4 @@ export const RoomRoundCaptionsItemLink = styled('button', {
 
 export const RoomRoundCaptionsItemCards = styled('span', {
   base: { display: 'flex', flexWrap: 'wrap', gap: '3px', '& img': { width: '30px', height: '42px', borderRadius: '4px' } },
-});
-
-// Your fuse (D11): it burns along your edge of the screen in your turn's last 8 seconds.
-export const RoomRoundFuseRoot = styled('div', {
-  base: {
-    '--fuse': '1',
-    position: 'absolute',
-    left: '0',
-    right: '0',
-    bottom: '0',
-    height: '6px',
-    bg: 'rgba(0, 0, 0, 0.4)',
-    pointerEvents: 'none',
-    _before: {
-      content: '""',
-      position: 'absolute',
-      left: '0',
-      top: '0',
-      bottom: '0',
-      width: 'calc(var(--fuse) * 100%)',
-      bgImage: 'linear-gradient(90deg, {colors.lamp.deep}, {colors.lamp.warm} 70%, {colors.suit.red})',
-      transition: 'width 0.25s linear',
-    },
-    _after: {
-      content: '""',
-      position: 'absolute',
-      top: '50%',
-      left: 'calc(var(--fuse) * 100%)',
-      width: '16px',
-      height: '16px',
-      marginTop: '-8px',
-      marginLeft: '-8px',
-      borderRadius: 'full',
-      bg: 'lamp.glow',
-      boxShadow: '0 0 12px 4px {colors.lamp.warm}, 0 0 24px 8px rgba(226, 65, 47, 0.6)',
-      transition: 'left 0.25s linear',
-      animation: 'pulse 0.25s ease-in-out infinite',
-    },
-  },
 });

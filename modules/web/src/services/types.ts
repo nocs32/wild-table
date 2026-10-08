@@ -20,6 +20,9 @@ export interface SoundPreference {
   muted: boolean;
 }
 
+// The 3D table's graphics (spec §8.3): lighter by itself when the game stutters, or set by hand.
+export type GraphicsPreference = 'auto' | 'full' | 'light';
+
 // This browser's own settings, kept in localStorage.
 export interface PreferencesService {
   loadLanguage: () => Language | null;
@@ -28,6 +31,8 @@ export interface PreferencesService {
   saveName: (name: string) => void;
   loadSound: () => SoundPreference | null;
   saveSound: (sound: SoundPreference) => void;
+  loadGraphics: () => GraphicsPreference | null;
+  saveGraphics: (graphics: GraphicsPreference) => void;
   // Where the floating chat sits, and whether it's open.
   loadWidget: (key: string) => WidgetPreference | null;
   saveWidget: (key: string, preference: WidgetPreference) => void;

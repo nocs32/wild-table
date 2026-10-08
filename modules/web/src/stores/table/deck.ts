@@ -161,6 +161,14 @@ export class TableDeckStore {
   dispose(): void {
     this.#plans.forEach((cancel) => cancel());
     this.#plans = [];
+
+    if (this.state !== 'gathering' && this.state !== 'shuffling') return;
+
+    // Cut off mid-shuffle (a round started): every card goes back into the deck, squared up.
+    const all = [...this.order, ...this.bodies.map((_, id) => id).filter((id) => !this.order.includes(id))];
+
+    all.forEach((id, slot) => this.bodies[id]?.rest(this.#slotSpot(slot), 'deck'));
+    this.#settle(all);
   }
 
   // A thrown card's slap, as loud and as bright as it was hard (D25).
@@ -230,7 +238,12 @@ export class TableDeckStore {
 
   // Runs `action` later, as an action of its own (MobX's strict mode).
   #later(delayMs: number, action: () => void): void {
-    this.#plans = [...this.#plans, this.#deps.schedule(() => runInAction(action), delayMs)];
+    const cancel = this.#deps.schedule(() => {
+      this.#plans = this.#plans.filter((plan) => plan !== cancel);
+      runInAction(action);
+    }, delayMs);
+
+    this.#plans = [...this.#plans, cancel];
   }
 
   #dealFaces(): CardFace[] {

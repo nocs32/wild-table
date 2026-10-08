@@ -1,4 +1,4 @@
-import { botBellDelay, botMove, handOf, legalMoves, seatView, type Move, type RoundState } from '@wild-table/engine';
+import { botBellDelay, botJumpInDelay, botMove, handOf, legalMoves, seatView, type Move, type RoundState } from '@wild-table/engine';
 import type { DemoMatch } from './match';
 import { DemoPlans } from './plans';
 import type { DemoDeps } from './types';
@@ -15,13 +15,15 @@ export interface DemoPlayersHost {
 }
 
 // The demo table's bots (spec §6.1): every seat but yours is played by the engine's planning bot,
-// as live tables play bot seats, after a human-ish think, and they race for the Last card! bell.
+// as live tables play bot seats, after a human-ish think; they race for the Last card! bell, and
+// with Jump-in on they slap down the exact card on top out of turn.
 export class DemoPlayers {
   #thinkingKey: string | null = null;
   #raceKey: string | null = null;
+  #jumpKey: string | null = null;
   readonly #deps: DemoDeps;
   readonly #host: DemoPlayersHost;
-  readonly #plans: DemoPlans<'think' | 'bells'>;
+  readonly #plans: DemoPlans<'think' | 'bells' | 'jumps'>;
 
   constructor(deps: DemoDeps, host: DemoPlayersHost) {
     this.#deps = deps;
@@ -41,12 +43,14 @@ export class DemoPlayers {
 
     this.#planTurn(round);
     this.#planBells(round);
+    this.#planJumpIns(round);
   }
 
   cancel(): void {
     this.#plans.cancelAll();
     this.#thinkingKey = null;
     this.#raceKey = null;
+    this.#jumpKey = null;
   }
 
   // One think per decision: a new decision (another turn, another step) replaces the old one.
@@ -94,6 +98,35 @@ export class DemoPlayers {
 
         if (delay !== null) this.#plans.later('bells', delay, () => this.#move(seat, { type: 'bell' }));
       });
+  }
+
+  // A new card on the pile: bots holding the same card may jump in (spec §5.7), after the race's beat.
+  #planJumpIns(round: RoundState): void {
+    const key = round.rules.jumpIn ? `${round.pile.length}|${round.deck.length}|${round.turn}` : null;
+
+    if (key === this.#jumpKey) return;
+
+    this.#plans.cancel('jumps');
+    this.#jumpKey = key;
+
+    if (key === null) return;
+
+    const { random, now } = this.#deps;
+
+    round.seats
+      .filter((seat) => seat !== round.turn && this.#host.isBot(seat))
+      .forEach((seat) => {
+        const delay = botJumpInDelay(seatView(round, seat), legalMoves(round, seat), random);
+
+        if (delay !== null) this.#plans.later('jumps', Math.max(delay, this.#host.match.beatUntil - now()), () => this.#jumpIn(seat));
+      });
+  }
+
+  #jumpIn(seat: string): void {
+    const round = this.#host.match.round;
+    const move = round ? botMove('planner', seatView(round, seat), legalMoves(round, seat), this.#deps.random) : null;
+
+    this.#move(seat, move?.type === 'play' ? move : null);
   }
 
   // A bot's move can come too late (the race was won, the round ended): that's fine.

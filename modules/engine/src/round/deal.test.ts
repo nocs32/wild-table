@@ -36,7 +36,7 @@ test('the first card is never a Wild +4, and its effect hits the first player', 
 });
 
 test('an opening Wild: the first player picks the colour, then plays', () => {
-  const opening = { ...makeRound({ hands: { a: ['b1'], b: ['y1'] }, top: 'W' }), pile: [{ kind: 'wild', id: 'W#opening' }] as const, step: { kind: 'pickColour' } as const };
+  const opening = { ...makeRound({ hands: { a: ['b1'], b: ['y1'] }, top: 'W' }), pile: [{ kind: 'wild', id: 'W#opening' }] as const, step: { kind: 'pickColour', opening: true } as const };
   const picked = after(move({ ...opening, pile: [...opening.pile] }, 'a', { type: 'pickColour', colour: 'blue' }));
 
   expect([picked.turn, picked.step.kind, picked.colour]).toEqual(['a', 'play', 'blue']);
@@ -53,7 +53,7 @@ test('out of time: draw and pass (even if it fits), or keep, pick, take, swap', 
   const timedOut = after(applyTimeout(state, createRandom(1)));
 
   expect([codesOf(timedOut, 'a'), timedOut.turn]).toEqual([['b1', 'g1', 'g2', 'r3'], 'b']);
-  expect(timeoutMove({ ...state, step: { kind: 'pickColour' } })).toEqual({ type: 'pickColour', colour: 'green' });
+  expect(timeoutMove({ ...state, step: { kind: 'pickColour', opening: false } })).toEqual({ type: 'pickColour', colour: 'green' });
   expect(timeoutMove({ ...state, step: { kind: 'answer' } })).toEqual({ type: 'take' });
   expect(timeoutMove({ ...state, step: { kind: 'swap' } })).toEqual({ type: 'swap', target: 'b' });
 });

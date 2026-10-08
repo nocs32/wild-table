@@ -52,5 +52,6 @@ export const roundSnapshot = (state: RoundState, endsAt: number): RoundSnapshot 
   deckSize: state.deck.length,
   pendingDraw: state.pendingDraw,
   race: state.race,
+  challengeColour: state.wild4 !== null && state.step.kind === 'answer' && topCard(state).kind === 'wild4' ? state.wild4.colour : null,
   endsAt,
 });

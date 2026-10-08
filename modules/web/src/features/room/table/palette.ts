@@ -10,11 +10,13 @@ export const glow = {
   pink: glowing(paint.neonPink, 3.4),
   cyan: glowing(paint.neonCyan, 3),
   amber: glowing(paint.lamp, 2.6),
-  sign: new Color(1, 1, 1).multiplyScalar(2.2),
+  sign: new Color(1, 1, 1).multiplyScalar(5),
   card: glowing(paint.card, 1.6),
   lava: glowing(paint.neonPink, 2.2),
   blob: glowing(paint.lamp, 2.4),
   bulb: glowing(paint.lamp, 4),
+  // The pinball machine's dot-matrix display: its lit dots bloom.
+  display: new Color(1, 1, 1).multiplyScalar(2.4),
 };
 
 // The four card colours, glowing: the colour in play under the pile, a Wild's wave (spec §8.1).

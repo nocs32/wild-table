@@ -15,5 +15,6 @@ The game's sounds come from [Freesound](https://freesound.org) under **CC0** (pu
 | `bubbles.wav` | [Bubbles 001.wav](https://freesound.org/people/ristooooo1/sounds/539823/) | ristooooo1 | 1.7 s of steady bubbling from 1.25 s, cut below 120 Hz, faded in and out, evened out in level |
 | `button.wav` | [Tape Deck Buttons and Switches](https://freesound.org/people/Nekkowe/sounds/403247/) | Nekkowe | one button press on a Sony boombox's tape deck, 0.32 s from 1.53 s, cut below 120 Hz, faded out, evened out in level |
 | `box.wav` | [PIZZA BOX OPEN.wav](https://freesound.org/people/ThatMisfit/sounds/388786/) | ThatMisfit | the lid, 0.95 s from 2.0 s, cut below 150 Hz, faded in and out, evened out in level (the recording is very quiet) |
+| `pop.wav` | [Mouth pop](https://freesound.org/people/jcallison/sounds/258269/) | jcallison | the first 0.3 s, cut below 150 Hz, faded out, evened out in level; played a little higher or lower for each emote |
 
 All of them are mono, 16-bit, 48 kHz, cut from Freesound's high-quality previews.

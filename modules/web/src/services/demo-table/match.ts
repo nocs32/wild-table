@@ -3,24 +3,26 @@ import {
   applyTimeout,
   dealRound,
   handOf,
+  heldByBeat,
   MatchRecord,
   nextFirstSeat,
   publicEvents,
   roundPoints,
   roundSnapshot,
+  turnClockMs,
   type Move,
   type MoveResult,
   type RoundEvent,
   type RoundPeek,
   type RoundState,
 } from '@wild-table/engine';
-import { gameLimits, type FeedEvent, type GamePhase, type GameSettings, type HandSnapshot, type MatchSnapshot, type PlayEvent, type TableErrorCode } from '@wild-table/protocol';
+import { gameLimits, raceBeatMs, type FeedEvent, type GamePhase, type GameSettings, type HandSnapshot, type MatchSnapshot, type PlayEvent, type TableErrorCode } from '@wild-table/protocol';
 import { DemoPlans } from './plans';
 import type { DemoDeps, DemoMember } from './types';
 
 // The server's pace (core-api `limits.ts`): the scores show for 10 seconds after a round, and the
 // next player waits a beat after a Last card! race opens (spec §4.3, §5.6).
-export const demoPace = { roundOverMs: 10_000, raceBeatMs: 1500 };
+export const demoPace = { roundOverMs: 10_000, raceBeatMs };
 
 export interface DemoMatchHost {
   members: () => readonly DemoMember[];
@@ -77,7 +79,7 @@ export class DemoMatch {
 
     if (!this.record.isSeated(seat)) return 'NOT_PLAYING';
 
-    if ((move.type === 'play' || move.type === 'draw') && seat === round.turn && this.#deps.now() < this.beatUntil) return 'TOO_SOON';
+    if (this.#deps.now() < this.beatUntil && heldByBeat(round, seat, move)) return 'TOO_SOON';
 
     const error = this.#apply(applyMove(round, seat, move, this.#deps.random), strength, move.type === 'bell');
 
@@ -151,7 +153,7 @@ export class DemoMatch {
 
     if (result.state.race !== null && result.state.race !== racing) this.beatUntil = this.#deps.now() + demoPace.raceBeatMs;
 
-    this.#afterMove(wasBell);
+    this.#afterMove(result.events, wasBell);
 
     return null;
   }
@@ -184,7 +186,7 @@ export class DemoMatch {
     this.phase = 'round';
     this.beatUntil = 0;
     this.#record(events, 0);
-    this.#startTurn(0);
+    this.#clock(this.#host.settings().turnSeconds * 1000, () => this.#timeout());
   }
 
   #toLobby(): void {
@@ -193,20 +195,25 @@ export class DemoMatch {
     this.#plans.cancel('clock');
   }
 
-  // The turn's fuse (spec D11), plus the beat when a race just opened.
-  #startTurn(extraMs: number): void {
-    this.#clock(this.#host.settings().turnSeconds * 1000 + extraMs, () => this.#timeout());
-  }
-
   #clock(delayMs: number, onEnd: () => void): void {
     this.#plans.cancel('clock');
     this.endsAt = this.#deps.now() + delayMs;
     this.#plans.later('clock', delayMs, onEnd);
   }
 
-  #afterMove(wasBell: boolean): void {
-    if (this.round?.winner) this.#endRound(this.round, this.round.winner);
-    else if (!wasBell) this.#startTurn(Math.max(0, this.beatUntil - this.#deps.now()));
+  // The clock after a move, as on the server: a new turn gets the whole time (plus a race's beat), a
+  // new step in the same turn what's left (at least a few seconds), and a bell leaves it be.
+  #afterMove(events: readonly RoundEvent[], wasBell: boolean): void {
+    if (this.round?.winner) {
+      this.#endRound(this.round, this.round.winner);
+
+      return;
+    }
+
+    const now = this.#deps.now();
+    const ms = turnClockMs(events, wasBell, { turnMs: this.#host.settings().turnSeconds * 1000, leftMs: this.endsAt - now, beatMs: Math.max(0, this.beatUntil - now) });
+
+    if (ms !== null) this.#clock(ms, () => this.#timeout());
   }
 
   #timeout(): void {
@@ -218,7 +225,7 @@ export class DemoMatch {
 
     if (!result.ok) return;
 
-    this.#played = [...this.#played, { type: 'timedOut', seat: round.turn }];
+    this.#played = [...this.#played, { type: 'timedOut', seat: round.turn, step: round.step.kind }];
     this.record.timedOut(round.turn);
     this.#apply(result, 0, false);
     this.#host.changed();

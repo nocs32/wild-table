@@ -43,7 +43,7 @@ test('+2: the next player draws 2 and misses their turn', () => {
 test('a Wild asks for a colour, then the turn moves on', () => {
   const picking = after(play(makeRound({ hands: { ...three, a: ['W', 'r1'] }, top: 'g7' }), 'a', 'W'));
 
-  expect([picking.turn, picking.step]).toEqual(['a', { kind: 'pickColour' }]);
+  expect([picking.turn, picking.step]).toEqual(['a', { kind: 'pickColour', opening: false }]);
 
   const picked = after(move(picking, 'a', { type: 'pickColour', colour: 'yellow' }));
 

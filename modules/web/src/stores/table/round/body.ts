@@ -36,6 +36,8 @@ export class TableRoundBody {
   impact = 0;
   // Headed for the pile and not landed yet, with this strength.
   landing: number | null = null;
+  // Moving in slow motion until then (the round's winning card).
+  #slowUntil = -1;
 
   constructor(spot: RoundSpot) {
     this.x = new Spring(spot.x, 150, 21);
@@ -86,13 +88,21 @@ export class TableRoundBody {
     return { ...spot, y: spot.y + (away > 0.06 ? Math.min(0.25, away * 0.45) : 0) + tilt };
   }
 
-  // Shaking its head: no.
+  // Shaking its head: no. It's not landing anywhere, nor in slow motion any more.
   refuse(): void {
     this.shake.velocity += 9;
+    this.landing = null;
+    this.#slowUntil = -1;
+  }
+
+  slowMo(until: number): void {
+    this.#slowUntil = until;
   }
 
   step(dt: number, now: number): void {
-    [this.x, this.y, this.z, this.pitch, this.yaw, this.roll, this.flip, this.scale, this.shake].forEach((spring) => spring.step(dt));
+    const time = now < this.#slowUntil ? dt * 0.28 : dt;
+
+    [this.x, this.y, this.z, this.pitch, this.yaw, this.roll, this.flip, this.scale, this.shake].forEach((spring) => spring.step(time));
     this.#land(now);
   }
 

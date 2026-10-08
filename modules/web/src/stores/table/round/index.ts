@@ -1,4 +1,4 @@
-import type { CardColour, PlayEvent, TableIntentType } from '@wild-table/protocol';
+import { isWild, type Card, type CardColour, type PlayEvent, type TableIntentType } from '@wild-table/protocol';
 import { makeAutoObservable, reaction, runInAction } from 'mobx';
 import type { Schedule, SoundsService } from '../../../services';
 import type { RoomGameStore } from '../../room/game';
@@ -14,17 +14,35 @@ export interface TableRoundDeps {
 }
 
 // What just happened that the table shows for a moment (spec §8): the slap, a colour washing over
-// the felt, the direction ring spinning, the bell ringing. Times in performance.now() milliseconds.
+// the felt, the direction ring spinning, the bell ringing, a +4 slamming down (the camera shakes and
+// the lamp swings), a hard throw nudging the camera, and a round won (the jukebox flashes). Times in
+// performance.now() milliseconds.
 export interface TableRoundEffects {
   slapAt: number;
   slapImpact: number;
   waveAt: number;
   spinAt: number;
   bellAt: number;
+  slamAt: number;
+  shakeAt: number;
+  shake: number;
+  winAt: number;
 }
 
 // Each event's beat before the next one plays, in milliseconds.
 const beats: Partial<Record<PlayEvent['type'], number>> = { colour: 420, skipped: 420, reversed: 520, challenged: 900, swapped: 700, handsPassed: 800, reshuffled: 650, bell: 260 };
+
+// How long a Skip's stamp stays on the skipped player's place card.
+const stampMs = 1500;
+// The round's winning card flies in slow motion for this long (spec §8).
+const slowMoMs = 1300;
+// A card sent to the pile that the table never answered for (the connection dropped, say) comes
+// back after this long.
+const pendingMs = 4000;
+// When the beats run this late (a tab in the background gets its timers slowed down), or this many
+// events wait, they aren't played one by one: the cards go straight to where they are now.
+const lateMs = 900;
+const backlog = 24;
 
 // The round on the 3D table (spec §8, §10.2): every card in it, moving on springs. The table's
 // events play in order, one beat at a time, so a fast bot never makes cards jump or skip; once
@@ -35,29 +53,43 @@ export class TableRoundStore {
   readonly hand: TableRoundHandStore;
   // Where your hand sits in the view, worked out from the camera every frame.
   frame: HandFrame = defaultHandFrame;
-  // Cards you've sent to the pile that the table hasn't confirmed yet.
-  readonly pending = new Set<string>();
-  readonly effects: TableRoundEffects = { slapAt: -1, slapImpact: 0, waveAt: -1, spinAt: -1, bellAt: -1 };
+  // Cards you've sent to the pile that the table hasn't confirmed yet, and when (performance.now()).
+  readonly pending = new Map<string, number>();
+  readonly effects: TableRoundEffects = { slapAt: -1, slapImpact: 0, waveAt: -1, spinAt: -1, bellAt: -1, slamAt: -1, shakeAt: -1, shake: 0, winAt: -1 };
+  // A Skip's stamp on a place card, by seat: a new number for each, so it slams on again.
+  readonly stamps = new Map<string, number>();
   // The colour in play and the direction, as far as the events have got.
   colour: CardColour | null = null;
   direction: 1 | -1 = 1;
   deckSize = 0;
   #queue: PlayEvent[] = [];
+  // How late the last beat came, in milliseconds.
+  #late = 0;
   #busy = false;
+  #stampCount = 0;
+  // The +4 on its way to the pile: it slams down.
+  #slamming: string | null = null;
   readonly #deps: TableRoundDeps;
 
   constructor(deps: TableRoundDeps) {
     const { game } = deps;
 
     this.#deps = deps;
-    this.hand = new TableRoundHandStore({ hand: game.hand, captions: game.captions, body: this.cards.body, play: (...args) => this.playFromHand(...args) });
-    makeAutoObservable(this, { frame: false, pending: false, effects: false, cards: false, hand: false, step: false }, { autoBind: true });
+    this.hand = new TableRoundHandStore({ hand: game.hand, captions: game.captions, body: (key) => this.cards.body(key), play: (...args) => this.playFromHand(...args) });
+    makeAutoObservable(this, { frame: false, pending: false, effects: false, cards: false, hand: false, step: false, setFrame: false, portraitSpot: false, isPending: false }, { autoBind: true });
     game.listen({ played: this.receive, refused: this.refuse });
     reaction(() => [game.state, game.match.snapshot, game.hand.cards], () => this.#settleWhenIdle());
   }
 
   get isShown(): boolean {
     return this.#deps.game.state !== 'lobby';
+  }
+
+  // Your Wild is down and its colour is yours to pick: the orbs rise over the pile.
+  get isPickingColour(): boolean {
+    const { match } = this.#deps.game;
+
+    return match.isMyTurn && match.round?.step === 'pickColour';
   }
 
   receive(events: readonly PlayEvent[]): void {
@@ -72,25 +104,47 @@ export class TableRoundStore {
 
   // Off to the pile from your hand, before the table answers (spec §8.2).
   playFromHand(cardId: string, velocity: { x: number; y: number; z: number }, strength: number): boolean {
-    if (!this.#deps.game.hand.play(cardId, strength)) return false;
+    const { hand } = this.#deps.game;
+    const now = performance.now();
 
-    this.pending.add(cardId);
+    if (!hand.canPlay(cardId)) return false;
+
+    if (this.cards.faceOf(cardId)?.kind === 'wild4') this.#slamming = cardId;
+
+    // On its way before the table hears of it, so a quick "no" finds it pending.
+    this.pending.set(cardId, now);
     this.cards.move(cardId, { kind: 'pile' });
     this.cards.body(cardId)?.launch(velocity, strength);
+
+    // Your last card wins the round: it flies in slow motion.
+    if (hand.count === 1) this.cards.body(cardId)?.slowMo(now + slowMoMs);
+
+    hand.play(cardId, strength);
 
     return true;
   }
 
-  // The table said no to a play: the card comes back to your hand, shaking its head.
+  // Sent to the pile and not answered yet (for a few seconds at most).
+  isPending(cardId: string): boolean {
+    const at = this.pending.get(cardId);
+
+    return at !== undefined && performance.now() - at < pendingMs;
+  }
+
+  // The table said no to a play: the card comes back to your hand, shaking its head. The table
+  // answers in order, so it's the oldest card still waiting.
   refuse(type: TableIntentType): void {
-    if (type !== 'play') return;
+    const cardId = this.pending.keys().next().value;
 
-    [...this.pending].forEach((cardId) => {
-      this.cards.move(cardId, { kind: 'hand' });
-      this.cards.body(cardId)?.refuse();
-    });
+    if (type !== 'play' || cardId === undefined) return;
 
-    this.pending.clear();
+    this.pending.delete(cardId);
+    this.cards.move(cardId, { kind: 'hand' });
+    this.cards.body(cardId)?.refuse();
+
+    if (this.#slamming === cardId) this.#slamming = null;
+
+    this.#settleWhenIdle();
   }
 
   // Where a player's place card stands: just outside the rail at their seat; yours just above the
@@ -119,8 +173,11 @@ export class TableRoundStore {
   #next(): void {
     const event = this.#queue[0];
 
-    if (!event) {
+    // Nothing left, or too far behind to be worth playing out: the cards settle where they are.
+    if (!event || this.#late > lateMs || this.#queue.length > backlog) {
+      this.#queue = [];
       this.#busy = false;
+      this.#late = 0;
       this.#settle();
 
       return;
@@ -137,7 +194,7 @@ export class TableRoundStore {
   #play(event: PlayEvent): number {
     switch (event.type) {
       case 'dealt':
-        return this.#deal(event.first.id, event.handSize, event.first);
+        return this.#deal(event.first, event.handSize);
       case 'played':
         return this.#played(event);
       case 'drew':
@@ -156,11 +213,19 @@ export class TableRoundStore {
         break;
       case 'reshuffled':
         this.#deps.sounds.play('shuffle');
+        // All but the top card went back into the deck (their ids come round again).
+        this.cards.pile.slice(0, -1).forEach((key) => this.cards.remove(key));
         this.#settle();
         break;
       case 'swapped':
       case 'handsPassed':
         this.#settle();
+        break;
+      case 'skipped':
+        this.#stamp(event.seat);
+        break;
+      case 'roundOver':
+        this.effects.winAt = performance.now();
         break;
       default:
         break;
@@ -171,13 +236,15 @@ export class TableRoundStore {
 
   // A new round: the table is cleared, the cards fly out to every seat one at a time, then the
   // first card turns up on the pile.
-  #deal(firstId: string, handSize: number, first: Parameters<TableRoundCardsStore['add']>[1]): number {
+  #deal(first: Card, handSize: number): number {
     const { match, hand } = this.#deps.game;
     const seats = match.seats;
     const gap = Math.max(22, Math.min(60, 1400 / Math.max(1, seats.length * handSize)));
 
     this.cards.clear();
     this.pending.clear();
+    this.colour = isWild(first) ? null : first.colour;
+    this.direction = 1;
     this.deckSize = 108 - seats.length * handSize;
     this.#deps.sounds.play('shuffle', { level: 0.7 });
 
@@ -196,7 +263,7 @@ export class TableRoundStore {
 
     const dealt = seats.length * handSize * gap;
 
-    this.#later(dealt + 200, () => this.cards.add(firstId, first, { kind: 'pile' }, { ...deckCardSpot(this.deckSize), y: 0.3 }));
+    this.#later(dealt + 200, () => this.cards.add(first.id, first, { kind: 'pile' }, { ...deckCardSpot(this.deckSize), y: 0.3 }));
 
     return dealt + 650;
   }
@@ -204,7 +271,14 @@ export class TableRoundStore {
   #played({ seat, card, strength }: Extract<PlayEvent, { type: 'played' }>): number {
     const { cards } = this;
 
-    if (this.pending.delete(card.id) || cards.placeOf(card.id)?.kind === 'pile') return 380;
+    if (this.pending.delete(card.id)) return Math.max(380, this.#moment(card.id, card.kind === 'wild4') - 40);
+
+    // Already on the pile but not on top (it came round again after a reshuffle): back on top.
+    if (cards.placeOf(card.id)?.kind === 'pile') {
+      if (cards.pile.at(-1) !== card.id) cards.move(card.id, { kind: 'pile' });
+
+      return 380;
+    }
 
     if (seat === this.#deps.game.match.meId && cards.has(card.id)) cards.move(card.id, { kind: 'pile' });
     else {
@@ -218,7 +292,34 @@ export class TableRoundStore {
 
     cards.body(card.id)?.launch({ x: 0, y: 0.5, z: 0 }, strength);
 
-    return card.kind === 'wild4' ? 650 : 420;
+    return this.#moment(card.id, card.kind === 'wild4');
+  }
+
+  // A +4 slams down; the card that wins the round flies in slow motion.
+  #moment(cardId: string, isWild4: boolean): number {
+    if (isWild4) this.#slamming = cardId;
+
+    const winning = this.#queue.findIndex((event) => event.type === 'roundOver');
+    const nextPlay = this.#queue.findIndex((event) => event.type === 'played');
+
+    if (winning >= 0 && (nextPlay < 0 || nextPlay > winning)) {
+      this.cards.body(cardId)?.slowMo(performance.now() + slowMoMs);
+
+      return slowMoMs + 300;
+    }
+
+    return isWild4 ? 650 : 420;
+  }
+
+  // The stamp slams onto the skipped player's place card, then lifts off.
+  #stamp(seat: string): void {
+    const id = ++this.#stampCount;
+
+    this.stamps.set(seat, id);
+
+    this.#later(stampMs, () => {
+      if (this.stamps.get(seat) === id) this.stamps.delete(seat);
+    });
   }
 
   // Cards off the top of the deck, one after another, to whoever drew them.
@@ -259,10 +360,26 @@ export class TableRoundStore {
       this.effects.slapAt = body.landedAt;
       this.effects.slapImpact = body.impact;
       this.#jostle(body.impact);
+      this.#shake(top === this.#slamming, body.impact, now);
       this.#deps.sounds.play('slap', { level: 0.3 + body.impact * 0.7, rate: 0.9 + body.impact * 0.2 });
     }
 
     if (now - this.effects.slapAt > 2000) this.effects.slapImpact = 0;
+  }
+
+  // A +4 slams: the camera shakes and the lamp swings. A hard throw nudges the camera (D25).
+  #shake(isSlam: boolean, impact: number, now: number): void {
+    if (isSlam) {
+      this.#slamming = null;
+      this.effects.slamAt = now;
+    }
+
+    const shake = isSlam ? 0.6 + impact * 0.4 : impact > 0.7 ? impact * 0.25 : 0;
+
+    if (shake === 0) return;
+
+    this.effects.shakeAt = now;
+    this.effects.shake = shake;
   }
 
   // The cards under a slap shift a little across the felt, harder for a harder slap, and settle
@@ -280,7 +397,14 @@ export class TableRoundStore {
     });
   }
 
+  // Runs `action` later, as an action, noting how late it came.
   #later(delayMs: number, action: () => void): void {
-    this.#deps.schedule(() => runInAction(action), Math.max(0, delayMs));
+    const wait = Math.max(0, delayMs);
+    const due = performance.now() + wait;
+
+    this.#deps.schedule(() => {
+      this.#late = performance.now() - due;
+      runInAction(action);
+    }, wait);
   }
 }

@@ -1,4 +1,4 @@
-import { applySettings, MatchRecord, publicEvents, roundPoints, settingChanges, type MatchSeatHolder, type Move, type RoundEvent, type RoundPeek } from '@wild-table/engine';
+import { applySettings, heldByBeat, MatchRecord, publicEvents, roundPoints, settingChanges, turnClockMs, type MatchSeatHolder, type Move, type RoundEvent, type RoundPeek } from '@wild-table/engine';
 import { defaultGameSettings, gameLimits, type GamePhase, type GameSettings, type GameSettingsPatch, type PlayEvent } from '@wild-table/protocol';
 import { limits } from '../limits.js';
 import type { TableRoomCards } from './cards.js';
@@ -127,15 +127,17 @@ export class TableRoomGame {
 
     if (!this.match.isSeated(seat)) throw new TableRoomError('NOT_PLAYING');
 
-    if ((move.type === 'play' || move.type === 'draw') && seat === cards.round?.turn && now() < this.beatUntil) throw new TableRoomError('TOO_SOON');
+    if (cards.round && now() < this.beatUntil && heldByBeat(cards.round, seat, move)) throw new TableRoomError('TOO_SOON');
 
-    this.#record(cards.move(seat, move), strength);
+    const events = cards.move(seat, move);
+
+    this.#record(events, strength);
 
     const race = cards.round?.race ?? null;
 
     if (race !== null && race !== racing) this.beatUntil = now() + raceBeatMs;
 
-    this.#afterMove(move.type === 'bell');
+    this.#afterMove(events, move.type === 'bell');
   }
 
   #record(events: readonly RoundEvent[], strength: number): void {
@@ -175,22 +177,29 @@ export class TableRoomGame {
     this.#record(this.#deps.cards.deal(this.match.seats, this.settings, this.match.lastWinner), 0);
     this.phase = 'round';
     this.beatUntil = 0;
-    this.#startTurn(0);
+    this.#startTurn();
   }
 
-  // The turn's fuse (spec D11), plus the beat when a race just opened.
-  #startTurn(extraMs: number): void {
-    this.#deps.clock.start(this.settings.turnSeconds * 1000 + extraMs, () => this.#timeout());
+  // The first turn's fuse (spec D11).
+  #startTurn(): void {
+    this.#deps.clock.start(this.settings.turnSeconds * 1000, () => this.#timeout());
   }
 
-  #afterMove(wasBell: boolean): void {
-    if (this.#deps.cards.winner !== null) {
+  // The clock after a move: a new turn gets the whole time, a new step in the same turn what's left
+  // (at least a few seconds), and a bell leaves it be.
+  #afterMove(events: readonly RoundEvent[], wasBell: boolean): void {
+    const { cards, clock, now } = this.#deps;
+
+    if (cards.winner !== null) {
       this.#endRound();
 
       return;
     }
 
-    if (!wasBell) this.#startTurn(Math.max(0, this.beatUntil - this.#deps.now()));
+    const times = { turnMs: this.settings.turnSeconds * 1000, leftMs: (clock.endsAt ?? 0) - now(), beatMs: Math.max(0, this.beatUntil - now()) };
+    const ms = turnClockMs(events, wasBell, times);
+
+    if (ms !== null) clock.start(ms, () => this.#timeout());
   }
 
   #timeout(): void {
@@ -198,10 +207,15 @@ export class TableRoomGame {
 
     if (this.phase !== 'round' || !turn) return;
 
-    this.#played = [...this.#played, { type: 'timedOut', seat: turn }];
-    this.#record(this.#deps.cards.timeout(), 0);
+    const step = this.#deps.cards.round?.step.kind ?? 'play';
+
+    this.#played = [...this.#played, { type: 'timedOut', seat: turn, step }];
+
+    const events = this.#deps.cards.timeout();
+
+    this.#record(events, 0);
     this.match.timedOut(turn);
-    this.#afterMove(false);
+    this.#afterMove(events, false);
     this.#deps.changed();
   }
 

@@ -66,7 +66,7 @@ const playNumber = (context: RoundContext, seat: SeatId, card: NumberFace): void
     return;
   }
 
-  if (state.rules.sevenZero && card.value === 0) passHands(context);
+  if (state.rules.sevenZero && card.value === 0) passHands(context, seat);
 
   passTurn(context, seat);
 };
@@ -89,10 +89,10 @@ const applyEffect = (context: RoundContext, seat: SeatId, card: Card, bluff: boo
   } else {
     if (card.kind === 'wild4') {
       state.pendingDraw += 4;
-      state.wild4 = { seat, bluff };
+      state.wild4 = { seat, bluff, colour: state.colour, hand: [...handOf(state, seat)] };
     }
 
-    state.step = { kind: 'pickColour' };
+    state.step = { kind: 'pickColour', opening: false };
   }
 };
 

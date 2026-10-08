@@ -46,6 +46,10 @@ export class LiveTableView {
     this.#samples = [...this.#samples, now - this.#now()].slice(-maxSamples);
     this.#members = members;
     this.#game = game;
+
+    // Between rounds nobody holds cards: last round's hand mustn't show up in the next one.
+    if (game.phase !== 'round') this.#hand = null;
+
     this.#send();
   }
 

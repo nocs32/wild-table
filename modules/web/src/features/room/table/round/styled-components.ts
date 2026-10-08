@@ -73,6 +73,31 @@ export const RoomTableRoundSeatTag = styled('span', {
   },
 });
 
+// A Skip's stamp, slammed onto the skipped player's place card (spec §8): red ink, straight.
+export const RoomTableRoundSeatStamp = styled('span', {
+  base: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    paddingInline: '10px',
+    paddingBlock: '2px',
+    borderRadius: '6px',
+    border: '3px solid',
+    borderColor: 'suit.red',
+    bg: 'print.card',
+    color: 'suit.red',
+    fontFamily: 'display',
+    fontWeight: '900',
+    fontSize: '18px',
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase',
+    whiteSpace: 'nowrap',
+    pointerEvents: 'none',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.45)',
+    animation: 'stampIn 1.5s ease-out forwards',
+  },
+});
+
 // An emote's speech bubble, over the place card.
 export const RoomTableRoundSeatBubble = styled('span', {
   base: {

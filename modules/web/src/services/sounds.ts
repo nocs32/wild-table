@@ -1,8 +1,9 @@
 import type { SoundCue, SoundPlay, SoundsService } from './types';
 
 // The game's cues (spec §7): the turn's chime, the cards (a slap on the pile, a deal, a riffle),
-// the Last card! bell, the fuse, the pinball machine's jackpot, and the props you poke.
-export const soundCues = ['chime', 'slap', 'deal', 'shuffle', 'bell', 'fuse', 'jackpot', 'creak', 'bubbles', 'button', 'box'] as const;
+// the Last card! bell, the fuse, the pinball machine's jackpot, the props you poke, and an emote's
+// speech bubble popping up.
+export const soundCues = ['chime', 'slap', 'deal', 'shuffle', 'bell', 'fuse', 'jackpot', 'creak', 'bubbles', 'button', 'box', 'pop'] as const;
 
 export type SoundUrls = Record<SoundCue, string>;
 
@@ -19,6 +20,7 @@ const cueLevels: Record<SoundCue, number> = {
   bubbles: 0.55,
   button: 0.8,
   box: 0.7,
+  pop: 0.6,
 };
 
 interface Voice {

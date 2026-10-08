@@ -103,6 +103,17 @@ export class TableRoundHandStore {
     else this.#letGo(press);
   }
 
+  // The gesture was cut off (the system took the pointer, or the window lost focus): nothing is
+  // played, and a held card goes back into your hand.
+  cancel(): void {
+    this.#press = null;
+
+    if (this.state !== 'pressing' && this.state !== 'holding') return;
+
+    this.state = 'idle';
+    this.heldId = null;
+  }
+
   // A click on the pile plays the card you picked.
   clickPile(): void {
     if (this.state === 'selected' && this.selectedId) this.#tryPlay(this.selectedId, { x: 0, y: 1.2, z: -1 }, 0.5);

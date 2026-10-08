@@ -11,6 +11,7 @@ import {
   RoomTableRoundSeatChip,
   RoomTableRoundSeatName,
   RoomTableRoundSeatRoot,
+  RoomTableRoundSeatStamp,
   RoomTableRoundSeatStats,
   RoomTableRoundSeatTag,
   RoomTableRoundSeatText,
@@ -21,8 +22,8 @@ interface RoomTableRoundSeatProps {
 }
 
 // A player's place at the table (spec §8): their chip, name, cards and score, glowing on their
-// turn, with a 🤖 while a bot plays the seat, "Last card!" while they can be caught, and their emotes
-// in a speech bubble. Your own chip opens your emotes; anyone else's mutes theirs (or, on your 7,
+// turn, with a 🤖 while a bot plays the seat, "Last card!" while they can be caught, their emotes
+// in a speech bubble, and a stamp slammed on when they're skipped. Your own chip opens your emotes; anyone else's mutes theirs (or, on your 7,
 // swaps hands with them).
 export const RoomTableRoundSeat = observer(function RoomTableRoundSeat({ seat }: RoomTableRoundSeatProps): ReactElement {
   const { locale, room, table } = useRootStore();
@@ -30,6 +31,7 @@ export const RoomTableRoundSeat = observer(function RoomTableRoundSeat({ seat }:
   const bubble = emotes.bubbleOf(seat.id);
   const hint = room.game.seatHint(seat.id, seat.name);
   const spot = useRoomTableRoundSeat(table.round, seat.angle, seat.isMe);
+  const stamp = table.round.stamps.get(seat.id);
 
   return (
     <group ref={spot}>
@@ -50,6 +52,7 @@ export const RoomTableRoundSeat = observer(function RoomTableRoundSeat({ seat }:
           </RoomTableRoundSeatText>
           {seat.isRacing && <RoomTableRoundSeatTag>{locale.t('round.bell.label')}</RoomTableRoundSeatTag>}
           {bubble && <RoomTableRoundSeatBubble>{bubble}</RoomTableRoundSeatBubble>}
+          {stamp !== undefined && <RoomTableRoundSeatStamp key={stamp}>{locale.t('round.seat.skipped')}</RoomTableRoundSeatStamp>}
         </RoomTableRoundSeatRoot>
       </Html>
     </group>

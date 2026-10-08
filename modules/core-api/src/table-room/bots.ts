@@ -1,4 +1,4 @@
-import { botBellDelay, botMove, handOf, type RoundState } from '@wild-table/engine';
+import { botBellDelay, botJumpInDelay, botMove, handOf, type RoundState } from '@wild-table/engine';
 import { gameLimits } from '@wild-table/protocol';
 import { limits } from '../limits.js';
 import type { TableRoomCards } from './cards.js';
@@ -26,11 +26,14 @@ const { botThinkMs } = limits.table;
 // The bots (spec D9, §6, §6.1 layer 3). In the lobby, anyone may sit one down in a free seat or send
 // one away, and a person who arrives at a full table takes the newest bot's seat. In a round, a bot
 // plays its own seat, and the seat of anyone who dropped out or ran out of time twice, after a
-// human-ish think; and it reaches for the Last card! bell with a human-ish delay.
+// human-ish think; it reaches for the Last card! bell with a human-ish delay; and with Jump-in on,
+// it slaps down the exact card on top out of turn.
 export class TableRoomBots {
   #thinking: { key: string; cancel: () => void } | null = null;
   #raceKey: string | null = null;
+  #jumpKey: string | null = null;
   readonly #rings = new Map<string, () => void>();
+  readonly #jumps = new Map<string, () => void>();
   readonly #deps: TableRoomBotsDeps;
 
   constructor(deps: TableRoomBotsDeps) {
@@ -88,6 +91,7 @@ export class TableRoomBots {
 
     this.#planTurn(round);
     this.#planBells(round);
+    this.#planJumpIns(round);
   }
 
   dispose(): void {
@@ -95,6 +99,8 @@ export class TableRoomBots {
     this.#thinking = null;
     this.#cancelRings();
     this.#raceKey = null;
+    this.#cancelJumps();
+    this.#jumpKey = null;
   }
 
   #checkLobby(): void {
@@ -152,6 +158,37 @@ export class TableRoomBots {
     });
   }
 
+  // A new card on the pile: bots holding the same card may jump in (spec §5.7), after the race's beat.
+  #planJumpIns(round: RoundState): void {
+    const { cards, schedule, random, now, game } = this.#deps;
+    const key = round.rules.jumpIn ? `${round.pile.length}|${round.deck.length}|${round.turn}` : null;
+
+    if (key === this.#jumpKey) return;
+
+    this.#cancelJumps();
+    this.#jumpKey = key;
+
+    if (key === null) return;
+
+    round.seats.filter((seat) => seat !== round.turn && this.#isBot(seat)).forEach((seat) => {
+      const delay = botJumpInDelay(cards.view(seat), cards.legal(seat), random);
+
+      if (delay !== null) this.#jumps.set(seat, schedule(() => this.#jumpIn(seat), Math.max(delay, game.beatUntil - now())));
+    });
+  }
+
+  #jumpIn(seat: string): void {
+    const { cards, game, random } = this.#deps;
+
+    this.#jumps.delete(seat);
+
+    this.#safely(() => {
+      const move = botMove('planner', cards.view(seat), cards.legal(seat), random);
+
+      if (move?.type === 'play') game.botMove(seat, move);
+    });
+  }
+
   #ring(seat: string): void {
     this.#rings.delete(seat);
     this.#safely(() => this.#deps.game.botMove(seat, { type: 'bell' }));
@@ -171,5 +208,10 @@ export class TableRoomBots {
   #cancelRings(): void {
     this.#rings.forEach((cancel) => cancel());
     this.#rings.clear();
+  }
+
+  #cancelJumps(): void {
+    this.#jumps.forEach((cancel) => cancel());
+    this.#jumps.clear();
   }
 }

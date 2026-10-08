@@ -1,11 +1,13 @@
 import { personNameMaxLength } from '@wild-table/protocol';
 import { languages, type Language } from '../i18n';
 import type { WidgetFrame, WidgetPreference } from '../stores/ui/widgets/types';
-import type { PreferencesService, SoundPreference } from './types';
+import type { GraphicsPreference, PreferencesService, SoundPreference } from './types';
 
 const languageKey = 'wild-table:language';
 const nameKey = 'wild-table:name';
 const soundKey = 'wild-table:sound';
+const graphicsKey = 'wild-table:graphics';
+const graphicsChoices: readonly GraphicsPreference[] = ['auto', 'full', 'light'];
 const widgetKey = (key: string): string => `wild-table:widget:${key}`;
 
 const read = (key: string): string | null => {
@@ -75,6 +77,8 @@ export const createPreferences = (): PreferencesService => ({
   saveName: (name) => write(nameKey, name),
   loadSound: () => toSound(read(soundKey)),
   saveSound: (sound) => write(soundKey, `${sound.muted ? 'off' : 'on'}:${sound.volume}`),
+  loadGraphics: () => graphicsChoices.find((choice) => choice === read(graphicsKey)) ?? null,
+  saveGraphics: (graphics) => write(graphicsKey, graphics),
   loadWidget: (key) => toWidgetPreference(parse(read(widgetKey(key)))),
   saveWidget: (key, preference) => write(widgetKey(key), JSON.stringify(preference)),
 });

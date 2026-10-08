@@ -30,7 +30,7 @@ const openWith = (context: RoundContext, card: Card, first: SeatId): void => {
   const { state } = context;
 
   if (card.kind === 'wild') {
-    state.step = { kind: 'pickColour' };
+    state.step = { kind: 'pickColour', opening: true };
   } else if (card.kind === 'skip') {
     context.events.push({ type: 'skipped', seat: first });
     passTurn(context, first);

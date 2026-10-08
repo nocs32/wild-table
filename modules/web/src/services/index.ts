@@ -16,6 +16,7 @@ export type {
   SoundPlay,
   DemoControls,
   DeviceService,
+  GraphicsPreference,
   PreferencesService,
   Schedule,
   Services,

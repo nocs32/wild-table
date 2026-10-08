@@ -9,7 +9,8 @@ import creak from './creak.wav';
 import deal from './deal.wav';
 import fuse from './fuse.wav';
 import jackpot from './jackpot.wav';
+import pop from './pop.wav';
 import shuffle from './shuffle.wav';
 import slap from './slap.wav';
 
-export const soundUrls: SoundUrls = { chime, slap, deal, shuffle, bell, fuse, jackpot, creak, bubbles, button, box };
+export const soundUrls: SoundUrls = { chime, slap, deal, shuffle, bell, fuse, jackpot, creak, bubbles, button, box, pop };
